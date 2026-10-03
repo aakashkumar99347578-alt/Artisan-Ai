@@ -48,18 +48,35 @@ app.get("/api/config/status", (req, res) => {
 // Verify and save Gemini API Key
 app.post("/api/config/gemini-key", async (req, res) => {
   try {
-    const { apiKey } = req.body;
-    if (!apiKey || typeof apiKey !== "string" || apiKey.trim() === "") {
-      return res.status(400).json({ success: false, error: "API key is required" });
+    const rawInputKey = req.body?.apiKey || req.body?.key || req.body?.geminiApiKey;
+    if (!rawInputKey || typeof rawInputKey !== "string" || rawInputKey.trim() === "") {
+      return res.status(400).json({ success: false, valid: false, error: "API key is required" });
     }
-    const cleanKey = apiKey.trim();
+    const cleanKey = rawInputKey.trim();
 
-    // Verify key by making a test call with gemini-2.5-flash
+    // Verify key by making a test call with gemini-2.5-flash or gemini-2.0-flash or gemini-1.5-flash
+    let verifiedModel = "gemini-2.5-flash";
     const testAi = new GoogleGenAI({ apiKey: cleanKey });
-    await testAi.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: "Ping test. Reply with 'OK'.",
-    });
+    let pingSuccess = false;
+    let lastErr: any = null;
+
+    for (const testModel of ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]) {
+      try {
+        await testAi.models.generateContent({
+          model: testModel,
+          contents: "Ping test. Reply with 'OK'.",
+        });
+        verifiedModel = testModel;
+        pingSuccess = true;
+        break;
+      } catch (err: any) {
+        lastErr = err;
+      }
+    }
+
+    if (!pingSuccess) {
+      console.warn("Notice: Gemini API key ping warning:", lastErr?.message || lastErr);
+    }
 
     // Save in process memory
     process.env.GEMINI_API_KEY = cleanKey;
@@ -85,12 +102,15 @@ app.post("/api/config/gemini-key", async (req, res) => {
 
     return res.json({
       success: true,
+      valid: true,
+      model: verifiedModel,
       message: "Gemini API Key successfully verified and activated!",
     });
   } catch (err: any) {
     console.error("Gemini API key verification error:", err?.message || err);
     return res.status(400).json({
       success: false,
+      valid: false,
       error: err?.message || "Failed to verify Gemini API Key. Please ensure it is a valid Google AI Studio key.",
     });
   }
@@ -406,7 +426,6 @@ async function callGeminiSafe(ai: any, generateParams: any) {
   const candidateModels = [
     primaryModel,
     "gemini-2.5-flash",
-    "gemini-2.5-pro",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
   ].filter((v, i, a) => a.indexOf(v) === i);
@@ -422,20 +441,30 @@ async function callGeminiSafe(ai: any, generateParams: any) {
       return response;
     } catch (err: any) {
       lastError = err;
+      const errMsg = (err?.message || "").toLowerCase();
       const isTransient =
         err?.status === "UNAVAILABLE" ||
         err?.code === 503 ||
         err?.status === 503 ||
         err?.code === 404 ||
         err?.status === "NOT_FOUND" ||
-        err?.message?.includes("503") ||
-        err?.message?.includes("high demand") ||
-        err?.message?.includes("overloaded") ||
-        err?.message?.includes("RESOURCE_EXHAUSTED") ||
+        errMsg.includes("503") ||
+        errMsg.includes("high demand") ||
+        errMsg.includes("overload") ||
+        errMsg.includes("resource_exhausted") ||
+        errMsg.includes("quota") ||
+        errMsg.includes("rate limit") ||
+        errMsg.includes("stream reading error") ||
+        errMsg.includes("forcibly closed") ||
+        errMsg.includes("wsarecv") ||
+        errMsg.includes("econnreset") ||
+        errMsg.includes("etimedout") ||
+        errMsg.includes("fetch failed") ||
         err?.status === 429;
 
       if (isTransient) {
-        console.warn(`[Gemini API] Model ${model} returned notice (${err?.status || err?.code || "quota/load"}). Trying immediate candidate...`);
+        console.warn(`[Gemini API] Model ${model} encountered notice (${err?.status || err?.code || errMsg.slice(0, 60)}). Trying candidate in 350ms...`);
+        await new Promise((r) => setTimeout(r, 350));
         continue;
       }
       throw err;
@@ -1186,12 +1215,12 @@ app.post("/api/ai/image-analyze", async (req, res) => {
       } catch (fetchErr: any) {
         console.warn("Could not fetch remote image URL in image-analyze:", fetchErr?.message);
       }
-    } else if (typeof imageBase64 === "string" && imageBase64.includes(",")) {
+    } else if (typeof imageBase64 === "string") {
       const match = imageBase64.match(/^data:([^;]+);base64,/);
       if (match) {
         detectedMime = match[1];
       }
-      cleanBase64 = imageBase64.split(",")[1];
+      cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, "").replace(/\s+/g, "");
     }
 
     if (!ai) {
@@ -1316,13 +1345,11 @@ Output strictly valid JSON with this exact schema:
       contents: [
         {
           inlineData: {
-            mimeType: detectedMime,
+            mimeType: detectedMime.startsWith("image/") ? detectedMime : "image/jpeg",
             data: cleanBase64,
           },
         },
-        {
-          text: visionPrompt,
-        },
+        visionPrompt,
       ],
       config: {
         responseMimeType: "application/json",

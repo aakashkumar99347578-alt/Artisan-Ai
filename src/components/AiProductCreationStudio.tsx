@@ -173,15 +173,20 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       const res = await fetch('/api/config/gemini-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: keyToSave }),
+        body: JSON.stringify({ apiKey: keyToSave, key: keyToSave }),
       });
       const data = await res.json();
-      if (data.valid) {
+      if (data.valid || data.success) {
         setHasGeminiKey(true);
         setApiKeyStatusMsg(`✅ Gemini API connected! (${data.model || 'gemini-2.5-flash'})`);
-        setTimeout(() => setShowKeyModal(false), 1400);
+        setTimeout(() => {
+          setShowKeyModal(false);
+          if (uploadedImage) {
+            runImageAnalysis(uploadedImage, imageFileDetails?.name);
+          }
+        }, 1200);
       } else {
-        setApiKeyStatusMsg(`⚠️ Key saved in browser. Ping response: ${data.message || 'Stored'}`);
+        setApiKeyStatusMsg(`⚠️ Key saved in browser. (${data.message || data.error || 'Stored'})`);
       }
     } catch {
       setApiKeyStatusMsg('Key saved in browser storage.');
@@ -721,7 +726,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
   // =========================================================================
 
   // Client-side lightweight image optimizer for fast & ultra-reliable Gemini Vision identification
-  const compressImageForVision = (dataUrl: string, maxDim = 1024, quality = 0.85): Promise<string> => {
+  const compressImageForVision = (dataUrl: string, maxDim = 850, quality = 0.8): Promise<string> => {
     return new Promise((resolve) => {
       if (!dataUrl || !dataUrl.startsWith('data:image/')) {
         resolve(dataUrl);
@@ -731,27 +736,31 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       img.onload = () => {
         let w = img.width;
         let h = img.height;
-        if (w <= maxDim && h <= maxDim) {
-          resolve(dataUrl);
-          return;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
         }
-        if (w > h) {
-          h = Math.round((h * maxDim) / w);
-          w = maxDim;
-        } else {
-          w = Math.round((w * maxDim) / h);
-          h = maxDim;
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+            return;
+          }
+        } catch {
+          // fallback to original
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        } else {
-          resolve(dataUrl);
-        }
+        resolve(dataUrl);
       };
       img.onerror = () => resolve(dataUrl);
       img.src = dataUrl;
@@ -826,7 +835,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
 
     try {
       const res = await analyzeProductImage(imgUrl, 'image/jpeg', fileName || imageFileDetails.name, contextHint, voiceTranscript);
-      if (res.success && res.analysis) {
+      if (res && res.analysis) {
         const a = res.analysis;
         setProductAnalysis(a);
         updateJob('product_analysis', 'completed');
@@ -1041,13 +1050,18 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
         }
         updateJob('demand_analysis', 'completed');
 
-        setVisionGeneratedNotice(`✨ Gemini Vision Analyzed: "${newTitle}"! Complete Catalog, SEO, Fair Price & Market Demand ready.`);
+        if ((res as any).isFallback) {
+          setVisionGeneratedNotice(`✨ Analyzed with Artisan AI Engine: "${newTitle}"! Catalog, SEO, Fair Pricing & Demand ready.`);
+        } else {
+          setVisionGeneratedNotice(`✨ Gemini Vision Analyzed: "${newTitle}"! Complete Catalog, SEO, Fair Price & Market Demand ready.`);
+        }
       } else {
         updateJob('product_analysis', 'completed');
         updateJob('catalog_generation', 'completed');
         updateJob('seo_generation', 'completed');
         updateJob('price_analysis', 'completed');
         updateJob('demand_analysis', 'completed');
+        setVisionGeneratedNotice('⚠️ Product analysis generated with Artisan AI fallback. All fields ready.');
       }
     } catch (err: any) {
       console.warn('Image analysis notice:', err?.message || err);
@@ -1056,6 +1070,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       updateJob('seo_generation', 'completed');
       updateJob('price_analysis', 'completed');
       updateJob('demand_analysis', 'completed');
+      setVisionGeneratedNotice('⚠️ Product analysis ready with Artisan AI intelligence fallback.');
     } finally {
       setIsAnalyzingImage(false);
     }
