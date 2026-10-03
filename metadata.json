@@ -1,0 +1,11 @@
+{
+  "name": "KalaSetu - Indian Artisan Marketplace",
+  "description": "Authentic Indian handmade artisan marketplace with voice-driven AI product creation, B2B quotes, and regional craft discovery.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

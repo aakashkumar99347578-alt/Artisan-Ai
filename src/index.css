@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-display: "Cinzel", "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --color-cream: #FAF7F2;
+  --color-cream-soft: #F4EFE6;
+  --color-cream-card: #FFFFFF;
+  --color-terracotta: #C85A32;
+  --color-terracotta-hover: #B04924;
+  --color-earth: #3E2415;
+  --color-earth-light: #5A3924;
+  --color-saffron: #E27D26;
+  --color-forest: #2E4B3D;
+  --color-gold: #C99738;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #FAF7F2;
+  color: #2D241E;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle Indian Jaali / Motif pattern accent */
+.bg-craft-pattern {
+  background-color: #FAF7F2;
+  background-image: radial-gradient(#C85A3212 0.75px, transparent 0.75px), radial-gradient(#3E241508 0.75px, #FAF7F2 0.75px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* Custom scrollbar for gallery and preview */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F4EFE6;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4C9BA;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B5A593;
+}
