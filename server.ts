@@ -1191,12 +1191,19 @@ function buildCompleteProductPackage(a: any) {
 }
 
 // Smart Craft Resolver to ensure 100% accurate titles, descriptions, categories & materials
-function buildArtisanProductFromClues(clues: { contextHint?: string; fileName?: string; voiceTranscript?: string }) {
-  const { contextHint, fileName, voiceTranscript } = clues;
+function buildArtisanProductFromClues(clues: {
+  contextHint?: string;
+  fileName?: string;
+  voiceTranscript?: string;
+  lensTitle?: string;
+  lensVisualMatches?: any[];
+}) {
+  const { contextHint, fileName, voiceTranscript, lensTitle, lensVisualMatches } = clues;
   const rawHint = (contextHint || "").trim();
-  const textClues = `${rawHint} ${fileName || ""} ${voiceTranscript || ""}`.toLowerCase();
+  const visualLensText = (lensVisualMatches || []).map(m => m.title).join(" ");
+  const textClues = `${rawHint} ${lensTitle || ""} ${visualLensText} ${fileName || ""} ${voiceTranscript || ""}`.toLowerCase();
 
-  let title = rawHint || "";
+  let title = rawHint || (lensTitle ? lensTitle.split(" - ")[0].split(" | ")[0].split(",")[0].trim() : "");
   let category = "Traditional Handicrafts";
   let subcategory = "Artisan Craft";
   let material = "Natural Raw Materials";
@@ -1383,7 +1390,26 @@ app.post("/api/ai/image-analyze", async (req, res) => {
     }
 
     if (!ai) {
-      const fallbackAnalysis = buildArtisanProductFromClues({ contextHint, fileName, voiceTranscript });
+      let lensTitle = "";
+      let lensVisualMatches: any[] = [];
+      if (serpapiService.isConfigured() && imageBase64) {
+        try {
+          lensVisualMatches = await serpapiService.search_google_lens(imageBase64);
+          if (lensVisualMatches.length > 0) {
+            lensTitle = lensVisualMatches[0].title || "";
+          }
+        } catch (lensErr: any) {
+          console.warn("SerpApi Lens visual identification notice:", lensErr?.message || lensErr);
+        }
+      }
+
+      const fallbackAnalysis = buildArtisanProductFromClues({
+        contextHint,
+        fileName,
+        voiceTranscript,
+        lensTitle,
+        lensVisualMatches,
+      });
       const packageData = buildCompleteProductPackage(fallbackAnalysis);
       return res.json({
         success: true,
@@ -1565,8 +1591,27 @@ Output strictly valid JSON with this exact schema:
   } catch (error: any) {
     console.warn("Notice in image-analyze error fallback:", error?.message || error);
 
-    const { fileName, contextHint, voiceTranscript } = req.body || {};
-    const fallbackAnalysis = buildArtisanProductFromClues({ contextHint, fileName, voiceTranscript });
+    const { fileName, contextHint, voiceTranscript, imageBase64 } = req.body || {};
+    let lensTitle = "";
+    let lensVisualMatches: any[] = [];
+    if (serpapiService.isConfigured() && imageBase64) {
+      try {
+        lensVisualMatches = await serpapiService.search_google_lens(imageBase64);
+        if (lensVisualMatches.length > 0) {
+          lensTitle = lensVisualMatches[0].title || "";
+        }
+      } catch (lensErr: any) {
+        console.warn("SerpApi Lens visual fallback in error notice:", lensErr?.message || lensErr);
+      }
+    }
+
+    const fallbackAnalysis = buildArtisanProductFromClues({
+      contextHint,
+      fileName,
+      voiceTranscript,
+      lensTitle,
+      lensVisualMatches,
+    });
     const packageData = buildCompleteProductPackage(fallbackAnalysis);
 
     return res.json({

@@ -244,6 +244,68 @@ export class SerpApiService {
           };
         });
       }
+
+      // If it's a base64 image (uploaded locally from device)
+      if (imageUrlOrBase64.startsWith("data:image/")) {
+        const match = imageUrlOrBase64.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+        if (match) {
+          const ext = match[1] === "jpeg" ? "jpg" : match[1];
+          const rawBase64 = match[2];
+          const imgBuffer = Buffer.from(rawBase64, "base64");
+
+          const fd = new FormData();
+          fd.append("api_key", apiKey);
+          fd.append("image", new Blob([imgBuffer], { type: `image/${ext}` }), `artisan_upload.${ext}`);
+
+          const uploadRes = await fetch("https://serpapi.com/image", {
+            method: "POST",
+            body: fd,
+            signal: AbortSignal.timeout(6000),
+          });
+
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            if (uploadData.image_id) {
+              const params = new URLSearchParams({
+                engine: "google_lens",
+                image_id: uploadData.image_id,
+                api_key: apiKey,
+              });
+
+              const lensRes = await fetch(`https://serpapi.com/search?${params.toString()}`, {
+                signal: AbortSignal.timeout(6000),
+              });
+
+              if (lensRes.ok) {
+                const data = await lensRes.json();
+                const results = data.visual_matches || data.products || [];
+                return results.map((v: any, idx: number) => {
+                  let price = typeof v.price?.extracted_value === "number" ? v.price.extracted_value : null;
+                  if (price === null && typeof v.price === "string") {
+                    const parsed = parseFloat(v.price.replace(/[^0-9.]/g, ""));
+                    if (!isNaN(parsed)) price = parsed;
+                  }
+
+                  return {
+                    source: v.source || "Google Lens Visual Match",
+                    title: v.title || "Visually Similar Handcrafted Piece",
+                    url: v.link || v.product_link || "https://google.com",
+                    price,
+                    currency: "INR",
+                    rating: typeof v.rating === "number" ? v.rating : null,
+                    reviews: typeof v.reviews === "number" ? v.reviews : null,
+                    position: idx + 1,
+                    thumbnail: v.thumbnail || null,
+                    match_type: "visual" as const,
+                    availability: "available",
+                    query: "visual_lens_search",
+                  };
+                });
+              }
+            }
+          }
+        }
+      }
     } catch (e: any) {
       console.warn("Google Lens query note:", e?.message);
     }
