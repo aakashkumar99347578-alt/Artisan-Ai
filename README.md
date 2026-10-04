@@ -44,14 +44,16 @@ India is home to over **6.4 million traditional artisans and craftspersons**, ye
 ### 🌟 Core Innovation: *Photo + Voice ➔ AI-Generated Catalog, Pricing, SEO, & Demand*
 
 ```mermaid
-graph LR
-    A["📸 Raw Product Photo"] --> C["🤖 KalaSetu AI Engine"]
+graph TD
+    A["📸 Raw Product Photo"] --> C["🤖 KalaSetu AI Engine (Gemini 2.5 Flash)"]
     B["🎙️ Regional Voice Note (Hindi/English)"] --> C
-    C --> D["✨ E-Commerce Studio Ready Photo"]
+    C --> D["✨ E-Commerce Studio Ready Photo (SegFormer Cutout)"]
     C --> E["📝 Bilingual Catalog (Eng + हिंदी)"]
     C --> F["🔍 Full SEO & Search Tags"]
-    C --> G["💰 Smart Fair Pricing (Retail/B2B/Bulk)"]
-    C --> H["📈 30/60/90-Day Demand Insights"]
+    C --> G["🌐 SerpApi Market Research (Google Lens + Google Shopping India)"]
+    G --> H["🏷️ Live Competitor Pricing & Verified Merchant Links (Amazon, Flipkart, Etsy)"]
+    G --> I["📈 Live Market Demand Score (0-100) & Competition Analysis"]
+    G --> J["💰 Grounded AI Listing & Price Recommendation"]
 ```
 
 ### ✨ How Our Solution Stands Out Against Existing Platforms
@@ -62,8 +64,8 @@ graph LR
 | **Photography** | Seller must upload pre-edited white-background images | **AI Background Removal & Studio Isolation (SegFormer / remove.bg)** |
 | **Copywriting & SEO** | Manual English copywriting required | **Automated Gemini Vision + NLP Catalog & SEO Generation** |
 | **Bilingual Translation** | English only | **Native Bilingual Hindi & English with craft storytelling** |
-| **Pricing Strategy** | Seller guesses price; risk of under-pricing | **Smart Fair Pricing Engine with material/labor/margin breakdown** |
-| **Market Intelligence** | Static listings; no visibility into demand | **30/60/90-Day Market Demand Prediction & Festival Calendar** |
+| **Pricing Strategy** | Seller guesses price; risk of under-pricing | **Smart Fair Pricing Engine + Live Market Competitor Benchmarking** |
+| **Market Intelligence** | Static listings; no visibility into demand | **Live SerpApi Google Shopping & Google Lens Competitor Discovery + 0-100 Demand Score** |
 | **B2B Linkage** | Retail-focused, no bulk quote negotiation | **Integrated B2B Quote Inquiries & Bulk Wholesale Matching** |
 
 ---
@@ -73,12 +75,17 @@ graph LR
 ### 1. Applications & Core Services
 - **Mobile/Web Frontend**: React 19, TypeScript, Tailwind CSS, Lucide Icons, Framer Motion, fully mobile-responsive with voice-first UI.
 - **Backend API Server**: Node.js & Express.js (RESTful APIs, asynchronous AI pipeline orchestration, secure rate-limiting).
+- **Market Research & Search Intelligence (SerpApi)**:
+  - **Google Lens Products API**: Visual similarity search identifying matching craft products and aesthetic equivalents.
+  - **Google Shopping API**: India-localized marketplace discovery (`gl=in, hl=en, location=India`) extracting live merchant prices, ratings, review counts, and verified source links (Amazon.in, Flipkart, Etsy, TheHandicraftian).
+  - **Google Web Organic Search**: Market density and buyer search query signals.
+  - **Deduplication & Ranking Engine**: Normalizes merchant URLs, removes duplicates, and ranks top 8 competitors using artisan craft/material weighted scoring.
+  - **Demand Predictor Service**: Configurable 7-factor weighted scoring model (Market Visibility 20%, Price Competitiveness 20%, Ratings/Reviews 15%, Search Signals 15%, Competition 15%, Craft Differentiation 10%, Seasonality 5%).
 - **AI & ML Pipeline**:
   - **Vision & Multimodal Recognition**: Google Gemini 2.5 Flash (`@google/genai`) identifying craft type, raw materials, colors, and artisan techniques directly from photographs.
   - **Voice Transcription & Intent**: Hugging Face Whisper (`openai/whisper-large-v3-turbo`) + Web Speech API for Hindi and regional voice processing.
   - **Neural Background Removal**: Hugging Face SegFormer (`nvidia/segformer-b0-finetuned-ade-512-512`) and Remove.bg API for instant studio cutout.
-  - **Fair Pricing Engine**: Heuristic and market-calibrated algorithm analyzing craftsmanship hours, material costs, and margin safety net.
-  - **Demand Prediction Engine**: Telemetry-driven trend analyzer predicting 30/60/90-day market appetite and festival seasonality.
+  - **Anti-Hallucination Listing Generator**: Synthesizes market-grounded listing titles, descriptions, SEO tags, and recommended prices strictly adhering to observed market data.
 - **Database & Storage**: PostgreSQL via Supabase with client-side in-memory persistence fallback for offline reliability.
 
 ---
@@ -140,8 +147,9 @@ $$\text{Less Digital Effort} \longrightarrow \text{More Product Listings} \longr
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS, Lucide React, Motion.
 - **Backend**: Node.js, Express.js.
-- **AI Services**:
+- **AI & Market Intelligence Services**:
   - Google Gemini 2.5 Flash Multimodal Vision & NLP (`@google/genai`)
+  - SerpApi Engine (`google_shopping`, `google_lens`, `google` with India localization)
   - Hugging Face SegFormer & Whisper Large v3
   - Remove.bg API
 - **Database**: Supabase PostgreSQL + Local Storage Fallback Cache.
@@ -163,9 +171,13 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Add your Google Gemini API Key in `.env`:
+Add your API Keys in `.env` (Never exposed client-side; securely managed on server):
 ```env
+# Google Gemini API Key
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+
+# SerpApi Key for Google Lens & Google Shopping Market Research
+SERPAPI_KEY="YOUR_SERPAPI_KEY"
 ```
 *(Note: You can also enter or test the Gemini API Key directly inside the app UI via the top navigation bar).*
 
@@ -193,7 +205,14 @@ npm start
   - [x] Comprehensive E-Commerce SEO, Slug & Keywords
   - [x] Fair Pricing with Labor & Material Cost Breakdowns
   - [x] Market Demand Score & Festive Seasonality Insights
-- [x] **AI Background Isolation**: One-tap background cutout for e-commerce catalog ready photography.
+- [x] **Live SerpApi Market Intelligence & Competitor Discovery**:
+  - [x] Real-time Google Shopping India discovery across verified merchants (Amazon.in, Flipkart, Etsy, TheHandicraftian).
+  - [x] Google Lens visual product candidate matching.
+  - [x] Live competitor price range (Min, Max, Median) and review counts.
+  - [x] Verified, direct merchant URLs with clickable `[View Source]` links.
+- [x] **Market Signal-Based Demand Model**: Configurable 7-factor weighted scoring model (0-100 Score, Level, Trend, Confidence).
+- [x] **Anti-Hallucination AI Listing & Price Advisor**: Generates market-grounded listing titles, descriptions, tags, and fair pricing without inventing certifications or guaranteed sales numbers.
+- [x] **AI Background Isolation**: One-tap background cutout for e-commerce catalog ready photography (SegFormer & Remove.bg).
 - [x] **B2B Wholesale Inquiries**: Request custom quotations with bulk quantity discounts.
 
 ---

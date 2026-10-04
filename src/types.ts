@@ -591,5 +591,65 @@ export interface WorkflowJobState {
   seo_generation: { status: JobStatus; error?: string };
   price_analysis: { status: JobStatus; error?: string };
   demand_analysis: { status: JobStatus; error?: string };
+  market_research: { status: JobStatus; error?: string };
+}
+
+export interface MarketCompetitorProduct {
+  source: string;
+  title: string;
+  url: string;
+  price: number | null;
+  currency: string;
+  rating: number | null;
+  reviews: number | null;
+  position: number;
+  thumbnail: string | null;
+  match_type: 'visual' | 'shopping' | 'organic';
+  availability: string | null;
+  query: string;
+  match_score?: number;
+}
+
+export interface MarketResearchPriceAnalysis {
+  min: number | null;
+  max: number | null;
+  average: number | null;
+  median: number | null;
+  currency: string;
+  recommendedPrice: number | null;
+  confidence: number;
+  reasoning: string;
+}
+
+export interface MarketResearchRecommendation {
+  title: string;
+  description: string;
+  seoKeywords: string[];
+  tags: string[];
+  recommendedPrice: number | null;
+  explanation?: string;
+}
+
+export interface MarketResearchData {
+  status: 'success' | 'insufficient_data' | 'error';
+  searchedAt: string;
+  queries: string[];
+  topProducts: MarketCompetitorProduct[];
+  priceAnalysis: MarketResearchPriceAnalysis;
+  competition: {
+    score: number;
+    level: 'Low' | 'Medium' | 'High';
+  };
+  demand: {
+    score: number;
+    level: 'Low' | 'Medium' | 'High' | 'Very High';
+    trend: 'Increasing' | 'Stable' | 'Decreasing';
+    confidence: number;
+    competitionLevel: 'Low' | 'Medium' | 'High';
+    explanation: string;
+  };
+  recommendation: MarketResearchRecommendation;
+  sources: Array<{ name: string; url: string; count: number }>;
+  error?: string;
 }
 

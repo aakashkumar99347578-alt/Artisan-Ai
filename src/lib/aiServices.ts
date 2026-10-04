@@ -8,6 +8,7 @@ import {
   DemandData,
   AnalyticsEvent,
   AnalyticsEventType,
+  MarketResearchData,
 } from '../types';
 
 /**
@@ -718,5 +719,70 @@ export async function trackAnalyticsEvent(
   } catch (err) {
     // Non-blocking telemetry
     console.debug('Analytics telemetry notification:', err);
+  }
+}
+
+/**
+ * 11. SerpApi Market Research & Live Competitor Intelligence
+ */
+export async function checkSerpApiStatus(): Promise<{ configured: boolean }> {
+  try {
+    const res = await fetch('/api/config/serpapi-status');
+    if (!res.ok) return { configured: false };
+    return await res.json();
+  } catch {
+    return { configured: false };
+  }
+}
+
+export interface MarketResearchApiResult {
+  success: boolean;
+  marketResearch?: MarketResearchData;
+  error?: string;
+  authError?: boolean;
+}
+
+export async function runMarketResearch(params: {
+  product: {
+    name?: string;
+    product_name?: string;
+    category?: string;
+    material?: string | string[];
+    craft?: string;
+    style?: string;
+    colors?: string | string[];
+    features?: string[];
+    keywords?: string[];
+    estimated_price?: number;
+  };
+  imageUrl?: string;
+  imageBase64?: string;
+  voiceTranscript?: string;
+}): Promise<MarketResearchApiResult> {
+  try {
+    const res = await fetch('/api/market-research', {
+      method: 'POST',
+      headers: getAiHeaders(),
+      body: JSON.stringify(params),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to complete market research.',
+        authError: data.authError || res.status === 401,
+      };
+    }
+
+    return {
+      success: true,
+      marketResearch: data.marketResearch,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'Network connection issue while conducting market research.',
+    };
   }
 }

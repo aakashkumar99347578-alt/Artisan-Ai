@@ -11,9 +11,12 @@ import {
   DemandData,
   WorkflowJobState,
   JobStatus,
+  MarketResearchData,
+  MarketResearchRecommendation,
 } from '../types';
 import { dataStore } from '../lib/supabase';
 import { Product360Viewer } from './Product360Viewer';
+import { MarketIntelligenceSection } from './MarketIntelligenceSection';
 import {
   transcribeAudio,
   interpretVoiceInstruction,
@@ -27,6 +30,7 @@ import {
   trackAnalyticsEvent,
   getStoredGeminiApiKey,
   saveGeminiApiKey,
+  checkSerpApiStatus,
 } from '../lib/aiServices';
 import {
   Mic,
@@ -82,6 +86,13 @@ const SAMPLE_VOICE_SCRIPTS = [
     lang: 'Hindi' as const,
     tag: 'Rajasthan Pottery',
     transcript: 'नमस्ते, यह जयपुर का पारंपरिक हस्तनिर्मित टेराकोटा कुल्हड़ और दीया सेट है। 100% प्राकृतिक शुद्ध काली मिट्टी से बना है और लकड़ी की भट्टी में पकाया गया है। दिवाली पूजा और पर्यावरण-अनुकूल उपहार के लिए आदर्श है। खुदरा कीमत 450 रुपये और 50 पीस पर थोक भाव 320 रुपये है।',
+  },
+  {
+    id: 'sample_madhubani',
+    title: '🎨 मधुबनी लोक कला पेंटिंग (Hindi)',
+    lang: 'Hindi' as const,
+    tag: 'Bihar Folk Art',
+    transcript: 'नमस्ते, यह बिहार के मिथिला की पारंपरिक हस्तचित्रित मधुबनी पेंटिंग है। प्राकृतिक पौधों और खनिजों के रंगों से हाथ से बने कॉटन कैनवास पर मयूर और जीवन वृक्ष की सुंदर कलाकृति बनाई गई है। खुदरा मूल्य 2250 रुपये और 10 पीस पर थोक भाव 1550 रुपये है।',
   },
   {
     id: 'sample_brass',
@@ -142,18 +153,23 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [hasHfToken, setHasHfToken] = useState<boolean | null>(null);
   const [hasGeminiKey, setHasGeminiKey] = useState<boolean | null>(null);
+  const [hasSerpApiKey, setHasSerpApiKey] = useState<boolean | null>(null);
+  const [marketResearch, setMarketResearch] = useState<MarketResearchData | null>(null);
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
   const [geminiApiKeyInput, setGeminiApiKeyInput] = useState<string>(() => getStoredGeminiApiKey());
   const [isTestingKey, setIsTestingKey] = useState<boolean>(false);
   const [apiKeyStatusMsg, setApiKeyStatusMsg] = useState<string | null>(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
 
-  // Check health and Gemini key status on mount
+  // Check health, Gemini key and SerpApi status on mount
   useEffect(() => {
     fetch('/api/health')
       .then(res => res.json())
       .then(data => {
         setHasHfToken(Boolean(data.hasHfToken));
+        if (typeof data.hasSerpApiKey === 'boolean') {
+          setHasSerpApiKey(data.hasSerpApiKey);
+        }
       })
       .catch(() => setHasHfToken(false));
 
@@ -163,6 +179,10 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
         setHasGeminiKey(Boolean(data.hasGeminiKey) || Boolean(getStoredGeminiApiKey()));
       })
       .catch(() => setHasGeminiKey(Boolean(getStoredGeminiApiKey())));
+
+    checkSerpApiStatus()
+      .then(data => setHasSerpApiKey(data.configured))
+      .catch(() => setHasSerpApiKey(false));
   }, []);
 
   const handleSaveGeminiKey = async (keyToSave: string) => {
@@ -221,24 +241,11 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState('Hindi');
-  const [voiceTranscript, setVoiceTranscript] = useState(
-    'नमस्ते, मैंने टेराकोटा मिट्टी का सुंदर पारंपरिक दीया और कुल्हड़ बनाया है। यह प्राकृतिक नदी की मिट्टी से बना है। खुदरा मूल्य ₹350 और 20 पीस पर ₹220 थोक मूल्य है।'
-  );
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [productHint, setProductHint] = useState('');
   const [speechStatus, setSpeechStatus] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceIntent, setVoiceIntent] = useState<VoiceIntent | null>({
-    intent: 'create_product_catalog',
-    product_description: 'पारंपरिक हस्तनिर्मित टेराकोटा दीया और कुल्हड़',
-    category: 'Pottery & Ceramics',
-    background_request: 'clean e-commerce studio',
-    visual_style: 'authentic handcrafted finish',
-    target_customer: 'festive decor shoppers, corporate bulk gifting',
-    catalog_requested: true,
-    seo_requested: true,
-    price_analysis_requested: true,
-    demand_analysis_requested: true,
-    additional_instructions: ['Festive Diwali packaging', 'Eco-friendly riverbed clay'],
-  });
+  const [voiceIntent, setVoiceIntent] = useState<VoiceIntent | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -804,10 +811,10 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       img.src = result;
 
       // Compress for high-speed & reliable Gemini Vision recognition
-      const optimizedForVision = await compressImageForVision(result, 1024, 0.85);
+      const optimizedForVision = await compressImageForVision(result, 850, 0.8);
 
       // Automatically run Gemini Multimodal Vision analysis with file name & context
-      runImageAnalysis(optimizedForVision, file.name);
+      runImageAnalysis(optimizedForVision, file.name, productHint);
     };
     reader.readAsDataURL(file);
   };
@@ -822,6 +829,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       size: '1.4 MB',
       dimensions: '1200 x 900 px',
     });
+    setProductHint(craft.title);
     runImageAnalysis(craft.url, `${craft.id}_sample.jpg`, craft.title);
   };
 
@@ -834,7 +842,9 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
     updateJob('demand_analysis', 'processing');
 
     try {
-      const res = await analyzeProductImage(imgUrl, 'image/jpeg', fileName || imageFileDetails.name, contextHint, voiceTranscript);
+      const activeHint = contextHint || productHint || undefined;
+      const effectiveVoice = voiceTranscript && voiceTranscript.trim() ? voiceTranscript : undefined;
+      const res = await analyzeProductImage(imgUrl, 'image/jpeg', fileName || imageFileDetails.name, activeHint, effectiveVoice);
       if (res && res.analysis) {
         const a = res.analysis;
         setProductAnalysis(a);
@@ -1394,8 +1404,14 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
             <div className="hidden sm:flex items-center space-x-2 bg-stone-800/80 px-3 py-1.5 rounded-lg border border-stone-700 text-xs">
               <span className={`w-2 h-2 rounded-full ${hasHfToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               <span className="text-stone-300">
-                {hasHfToken ? 'HF Token Active' : 'Whisper + Vision Fallback Active'}
+                {hasHfToken ? 'HF Token Active' : 'Whisper + Vision Active'}
               </span>
+            </div>
+
+            {/* SerpApi Status Badge */}
+            <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs bg-amber-950/40 border-amber-500/30 text-amber-200">
+              <Globe className="w-3.5 h-3.5 text-amber-400" />
+              <span>{hasSerpApiKey ? 'SerpApi Market AI Active' : 'Market Research Ready'}</span>
             </div>
 
             {/* Gemini Key Config button */}
@@ -1732,6 +1748,70 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
                 </div>
               )}
 
+              {/* Product / Craft Hint Input Bar with 1-Tap Chips */}
+              <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-amber-950 flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Product Name / Craft Hint (उत्पाद का नाम या प्रकार):</span>
+                  </label>
+                  <span className="text-[11px] text-amber-800">100% सटीक टाइटल व टैग्स जनरेट करने में मदद करता है</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={productHint}
+                    onChange={(e) => setProductHint(e.target.value)}
+                    placeholder="उदा. Madhubani Painting, Terracotta Diya, Brass Lamp, Banarasi Saree, Wooden Box..."
+                    className="flex-1 text-xs px-3.5 py-2.5 bg-white border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-600 focus:outline-hidden text-stone-800 placeholder-stone-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (uploadedImage) {
+                        runImageAnalysis(uploadedImage, imageFileDetails.name, productHint);
+                      }
+                    }}
+                    disabled={isAnalyzingImage}
+                    className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    Apply Hint
+                  </button>
+                </div>
+                {/* 1-Tap Quick Craft Chips */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {[
+                    '🎨 Madhubani Painting',
+                    '🪔 Terracotta Diya',
+                    '🏺 Pottery Vase',
+                    '🧵 Silk Saree',
+                    '🔔 Brass Lamp',
+                    '🪵 Wood Carving',
+                    '👜 Leather Wallet',
+                    '💍 Kundan Jewelry',
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        const cleanChip = chip.replace(/^[\p{Emoji}\s]+/u, '').trim();
+                        setProductHint(cleanChip);
+                        if (uploadedImage) {
+                          runImageAnalysis(uploadedImage, imageFileDetails.name, cleanChip);
+                        }
+                      }}
+                      className={`text-[10px] font-medium px-2.5 py-1 rounded-lg transition-colors cursor-pointer border ${
+                        productHint.toLowerCase() === chip.replace(/^[\p{Emoji}\s]+/u, '').trim().toLowerCase()
+                          ? 'bg-amber-700 text-white border-amber-700'
+                          : 'bg-white hover:bg-amber-100 border-amber-200 text-stone-700'
+                      }`}
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Main Upload Box & Preview */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
                 {/* Left: Upload Area */}
@@ -1772,7 +1852,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
 
                   <button
                     disabled={isAnalyzingImage}
-                    onClick={() => runImageAnalysis(uploadedImage, imageFileDetails.name)}
+                    onClick={() => runImageAnalysis(uploadedImage, imageFileDetails.name, productHint)}
                     className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-stone-800 hover:bg-stone-900 disabled:bg-stone-500 text-white rounded-xl text-xs font-semibold transition-colors"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isAnalyzingImage ? 'animate-spin' : ''}`} />
@@ -1837,6 +1917,58 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
                   )}
                 </div>
               </div>
+
+              {/* MARKET INTELLIGENCE & COMPETITOR RESEARCH (Requirement #30) */}
+              <MarketIntelligenceSection
+                product={{
+                  name: productAnalysis?.product_name || catalog.title,
+                  product_name: productAnalysis?.product_name || catalog.title,
+                  category: productAnalysis?.category || catalog.category,
+                  material: productAnalysis?.material || catalog.material,
+                  craft: productAnalysis?.craft_technique || productHint || 'Authentic Craft',
+                  estimated_price: retailPriceInput || 999,
+                }}
+                imageUrl={uploadedImage}
+                voiceTranscript={voiceTranscript}
+                marketResearch={marketResearch}
+                onMarketResearchCompleted={(data) => {
+                  setMarketResearch(data);
+                  updateJob('market_research', 'completed');
+                }}
+                onApplyRecommendation={(rec) => {
+                  if (rec.title) {
+                    setCatalog((prev) => ({
+                      ...prev,
+                      title: rec.title,
+                      shortTitle: rec.title.slice(0, 35),
+                      shortDescription: rec.description || prev.shortDescription,
+                      tags: rec.tags && rec.tags.length > 0 ? rec.tags : prev.tags,
+                      keywords: rec.seoKeywords && rec.seoKeywords.length > 0 ? rec.seoKeywords : prev.keywords,
+                    }));
+                  }
+                  if (rec.recommendedPrice) {
+                    setRetailPriceInput(rec.recommendedPrice);
+                    setB2bPriceInput(Math.round(rec.recommendedPrice * 0.72));
+                    setBulkPriceInput(Math.round(rec.recommendedPrice * 0.65));
+                    setFairPricing((prev) => ({
+                      ...prev,
+                      suggestedRetailPrice: rec.recommendedPrice || prev.suggestedRetailPrice,
+                      estimated_price: rec.recommendedPrice || prev.estimated_price,
+                    }));
+                  }
+                  if (rec.seoKeywords && rec.seoKeywords.length > 0) {
+                    setSeo((prev) => ({
+                      ...prev,
+                      seoTitle: `${rec.title} | Authentic Indian Handmade Craft | KalaSetu`.slice(0, 70),
+                      metaDescription: (rec.description || prev.metaDescription).slice(0, 160),
+                      primaryKeyword: rec.seoKeywords[0] || prev.primaryKeyword,
+                      secondaryKeywords: rec.seoKeywords.slice(1, 4),
+                      searchTags: rec.tags && rec.tags.length > 0 ? rec.tags : prev.searchTags,
+                    }));
+                  }
+                }}
+                hasSerpApiKey={hasSerpApiKey}
+              />
             </div>
           )}
 
