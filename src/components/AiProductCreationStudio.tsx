@@ -798,6 +798,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       setImageOriginalBackup(result);
       setIsolatedProductImage(null);
       setGeneratedBackgroundImage(null);
+      setMarketResearch(null);
 
       // Measure dimensions
       const img = new Image();
@@ -824,6 +825,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
     setImageOriginalBackup(craft.url);
     setIsolatedProductImage(null);
     setGeneratedBackgroundImage(null);
+    setMarketResearch(null);
     setImageFileDetails({
       name: `${craft.id}_artisan_photo.jpg`,
       size: '1.4 MB',

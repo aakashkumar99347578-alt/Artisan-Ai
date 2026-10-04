@@ -411,20 +411,31 @@ export class SerpApiService {
       }
     }
 
-    // 2. Generate 2 to 4 high-value targeted queries
+    // 2. Generate 2 to 4 high-value targeted queries calibrated for all Indian craft products
     const candidateQueries: string[] = [];
 
-    // Query A: Primary craft + product name
-    const q1 = `${craft} ${productName}`.trim();
-    if (q1) candidateQueries.push(q1);
+    // Extract core commercial product terms (stripping verbose prefixes & trailing prepositions)
+    const cleanTitle = productName
+      .replace(/^(Handmade|Handcrafted|Authentic|Traditional|Original|Exquisite)\s+/i, "")
+      .replace(/\s+(on\s+Paper|on\s+Canvas|for\s+Decor|for\s+Gifting)$/i, "")
+      .trim();
 
-    // Query B: Material + Craft + Product + India
-    const q2 = `${material} ${productName} handmade India`.trim();
-    if (q2 && q2 !== q1) candidateQueries.push(q2);
+    // Query A: Clean concise product name (under 5 words for best Google Shopping match)
+    const conciseTitle = cleanTitle.split(/\s+/).slice(0, 5).join(" ");
+    if (conciseTitle) {
+      candidateQueries.push(conciseTitle);
+    }
 
-    // Query C: Category/Craft buy online price
-    if (craft || category) {
-      const q3 = `buy ${craft || category} ${productName} price`.trim();
+    // Query B: Specific craft / style targeted query
+    if (craft && !conciseTitle.toLowerCase().includes(craft.toLowerCase())) {
+      candidateQueries.push(`${craft} ${conciseTitle}`.trim());
+    } else if (category && !conciseTitle.toLowerCase().includes(category.toLowerCase())) {
+      candidateQueries.push(`${conciseTitle} ${category}`.trim());
+    }
+
+    // Query C: Craft handmade India shopping query
+    const q3 = `${conciseTitle} handmade India`.trim();
+    if (q3 && !candidateQueries.includes(q3)) {
       candidateQueries.push(q3);
     }
 
