@@ -45,7 +45,7 @@ India is home to over **6.4 million traditional artisans and craftspersons**, ye
 
 ```mermaid
 graph TD
-    A["📸 Raw Product Photo"] --> C["🤖 KalaSetu AI Engine (Gemini 2.5 Flash)"]
+    A["📸 Raw Product Photo"] --> C["🤖 KalaSetu AI Engine (Gemini 2.5 Flash Vision)"]
     B["🎙️ Regional Voice Note (Hindi/English)"] --> C
     C --> D["✨ E-Commerce Studio Ready Photo (SegFormer Cutout)"]
     C --> E["📝 Bilingual Catalog (Eng + हिंदी)"]
@@ -55,6 +55,24 @@ graph TD
     G --> I["📈 Live Market Demand Score (0-100) & Competition Analysis"]
     G --> J["💰 Grounded AI Listing & Price Recommendation"]
 ```
+
+---
+
+## 🎨 Universal Multimodal Craft Intelligence (For Every Indian Artisan Category)
+
+KalaSetu dynamically extracts factual product attributes, cultural stories, and live market benchmarks for **every craft vertical** without generic placeholders or hardcoded fallbacks:
+
+| Product Category | Gemini Vision Factual Extraction | SerpApi Live Competitor Discovery | Generated Catalog & Pricing Strategy |
+| :--- | :--- | :--- | :--- |
+| **Traditional Paintings & Folk Art** *(Madhubani, Mithila, Warli, Pattachitra, Gond, Tanjore)* | Identifies painting motifs, handmade paper/canvas, natural pigments, and fine-line brushwork technique. | Real-time paintings on Indian folk art galleries, Amazon, Flipkart, Etsy. | Art history, pigment preservation guidelines, framed decor dimensions, collector pricing. |
+| **Pottery & Ceramics** *(Terracotta Diya, Earthen Kulhad, Jaipur Blue Pottery, Clay Pots)* | Wheel-thrown contour, fire-glazed finish, riverbed clay composition, spout & rim shape. | Live terracotta diya sets, earthen tableware on Flipkart/Amazon. | Organic biodegradable certification, kiln durability notes, fair cost-plus margins. |
+| **Handloom & Textiles** *(Banarasi Silk, Chanderi, Kanjivaram Sarees, Khadi, Dupattas)* | Weave patterns, pure mulberry silk, zari borders, fabric drape, and loom craftsmanship. | Verified silk sarees and handloom garments with real market MRPs. | Silk Mark authenticity details, dry cleaning care, cultural GI heritage story. |
+| **Woodwork & Carvings** *(Sheesham Jali Box, Teak Wall Hanging, Wooden Toys)* | Wood grain, intricate floral jali fretwork, natural seasoned teak/sheesham, wax finish. | Hand-carved keepsake boxes, home accents across online craft stores. | Wood seasoning details, carving labor hours, anti-termite guidance, B2B corporate gifting. |
+| **Brass & Metalcraft** *(Dhokra Figurines, Brass Diya, Peacock Lamps, Bell Metal)* | Cast brass lustre, lost-wax casting texture, antique patina, structural weight. | Real brass puja accessories and heirloom decor on e-commerce platforms. | Approximate net metal weight, puja rituals guidance, brass polishing instructions. |
+| **Leather & Footwear** *(Kolhapuri Chappals, Mojaris, Handcrafted Bags)* | Genuine leather grain, hand-stitched soles, ethnic embroidery, dyed leather tones. | Ethnic footwear and genuine leather craft listings on top marketplaces. | Sole longevity care, sizing conversion charts, artisan leatherwork fair wage. |
+| **Jewelry & Adornments** *(Kundan, Terracotta Jewelry, Silver Filigree, Beaded Art)* | Stone setting, intricate filigree, beadwork density, metallic plating. | Handcrafted traditional jewelry listings across boutique jewelry retailers. | Hypoallergenic materials, festive wedding wear styling, velvet box care. |
+
+---
 
 ### ✨ How Our Solution Stands Out Against Existing Platforms
 
@@ -66,6 +84,7 @@ graph TD
 | **Bilingual Translation** | English only | **Native Bilingual Hindi & English with craft storytelling** |
 | **Pricing Strategy** | Seller guesses price; risk of under-pricing | **Smart Fair Pricing Engine + Live Market Competitor Benchmarking** |
 | **Market Intelligence** | Static listings; no visibility into demand | **Live SerpApi Google Shopping & Google Lens Competitor Discovery + 0-100 Demand Score** |
+| **Search Speed & Resiliency** | Prone to slow requests and gateway timeouts | **Optimized Sub-3s Early Exit & Safe Non-JSON Parse Handling** |
 | **B2B Linkage** | Retail-focused, no bulk quote negotiation | **Integrated B2B Quote Inquiries & Bulk Wholesale Matching** |
 
 ---
@@ -78,7 +97,9 @@ graph TD
 - **Market Research & Search Intelligence (SerpApi)**:
   - **Google Lens Products API**: Visual similarity search identifying matching craft products and aesthetic equivalents.
   - **Google Shopping API**: India-localized marketplace discovery (`gl=in, hl=en, location=India`) extracting live merchant prices, ratings, review counts, and verified source links (Amazon.in, Flipkart, Etsy, TheHandicraftian).
-  - **Google Web Organic Search**: Market density and buyer search query signals.
+  - **Smart Concise Query Generator**: Automatically strips redundant boilerplate words to generate high-precision 3-4 word shopping queries (e.g., `"Madhubani Gudi Padwa Folk Art"`, `"Sheesham Wood Jali Box"`, `"Terracotta Diya Kulhad"`).
+  - **Sub-3s Early-Exit & Quota Protection**: Completes scans in ~3 seconds once verified merchant candidates are found, conserving API quota.
+  - **Safe Non-JSON / Gateway Timeout Protection**: Strict `content-type` verification prevents `Unexpected token '<'` browser crashes if a proxy or network drops.
   - **Deduplication & Ranking Engine**: Normalizes merchant URLs, removes duplicates, and ranks top 8 competitors using artisan craft/material weighted scoring.
   - **Demand Predictor Service**: Configurable 7-factor weighted scoring model (Market Visibility 20%, Price Competitiveness 20%, Ratings/Reviews 15%, Search Signals 15%, Competition 15%, Craft Differentiation 10%, Seasonality 5%).
 - **AI & ML Pipeline**:
@@ -161,7 +182,7 @@ $$\text{Less Digital Effort} \longrightarrow \text{More Product Listings} \longr
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/your-username/Artisan-Ai.git
+git clone https://github.com/aakashkumar99347578-alt/Artisan-Ai.git
 cd Artisan-Ai
 npm install
 ```
@@ -198,7 +219,8 @@ npm start
 ## 📋 Evaluation Checklist for Judges
 
 - [x] **Voice-to-Intent**: Speak or test sample Hindi/English voice notes to capture product craft details.
-- [x] **One-Photo Gemini Vision Scanning**: Upload any craft image (Madhubani painting, terracotta diya, silk saree, brass lamp) and watch AI extract materials, technique, and craft identity.
+- [x] **One-Photo Gemini Vision Scanning**: Upload any craft image (Madhubani painting, terracotta diya, silk saree, brass lamp, wooden carving) and watch AI extract factual materials, technique, and craft identity.
+- [x] **Universal Craft Intelligence**: Dynamic factual extraction for all craft categories (Paintings, Textiles, Pottery, Woodcraft, Metalwork, Leather, Jewelry).
 - [x] **Automated 5-in-1 Output**:
   - [x] Title & Description (English & Hindi)
   - [x] Craft Story & GI Heritage Details
@@ -210,6 +232,8 @@ npm start
   - [x] Google Lens visual product candidate matching.
   - [x] Live competitor price range (Min, Max, Median) and review counts.
   - [x] Verified, direct merchant URLs with clickable `[View Source]` links.
+  - [x] Fast sub-3 second response time with early-exit quota optimization.
+  - [x] Resilient error handling preventing non-JSON parse crashes.
 - [x] **Market Signal-Based Demand Model**: Configurable 7-factor weighted scoring model (0-100 Score, Level, Trend, Confidence).
 - [x] **Anti-Hallucination AI Listing & Price Advisor**: Generates market-grounded listing titles, descriptions, tags, and fair pricing without inventing certifications or guaranteed sales numbers.
 - [x] **AI Background Isolation**: One-tap background cutout for e-commerce catalog ready photography (SegFormer & Remove.bg).
