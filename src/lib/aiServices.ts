@@ -766,6 +766,19 @@ export async function runMarketResearch(params: {
       body: JSON.stringify(params),
     });
 
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return {
+        success: false,
+        error: res.status === 401
+          ? 'Market research authentication failed. Please verify your SerpApi API key.'
+          : res.status === 504 || res.status === 408
+          ? 'Market research request timed out. Please click "Scan Live Market Competitors" to try again.'
+          : `Server returned unexpected response (status ${res.status}). Please try again.`,
+        authError: res.status === 401,
+      };
+    }
+
     const data = await res.json();
     if (!res.ok) {
       return {

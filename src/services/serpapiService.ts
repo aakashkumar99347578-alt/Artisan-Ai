@@ -84,7 +84,9 @@ export class SerpApiService {
       api_key: apiKey,
     });
 
-    const res = await fetch(`https://serpapi.com/search?${params.toString()}`);
+    const res = await fetch(`https://serpapi.com/search?${params.toString()}`, {
+      signal: AbortSignal.timeout(6000),
+    });
     if (res.status === 401) {
       throw new Error("SERPAPI_AUTH_FAILED");
     }
@@ -152,7 +154,9 @@ export class SerpApiService {
       api_key: apiKey,
     });
 
-    const res = await fetch(`https://serpapi.com/search?${params.toString()}`);
+    const res = await fetch(`https://serpapi.com/search?${params.toString()}`, {
+      signal: AbortSignal.timeout(5000),
+    });
     if (res.status === 401) throw new Error("SERPAPI_AUTH_FAILED");
     if (res.status === 429) throw new Error("SERPAPI_RATE_LIMIT");
     if (!res.ok) throw new Error(`SERPAPI_HTTP_ERROR_${res.status}`);
@@ -210,7 +214,9 @@ export class SerpApiService {
           api_key: apiKey,
         });
 
-        const res = await fetch(`https://serpapi.com/search?${params.toString()}`);
+        const res = await fetch(`https://serpapi.com/search?${params.toString()}`, {
+          signal: AbortSignal.timeout(6000),
+        });
         if (!res.ok) return [];
 
         const data = await res.json();
@@ -440,8 +446,13 @@ export class SerpApiService {
         console.warn(`Shopping search for "${q}" note:`, err.message);
       }
 
+      // If we already found verified merchant products, stop early to ensure instant response (<3s) and protect quota
+      if (allProducts.length >= 2) {
+        break;
+      }
+
       // If we don't have enough results yet, supplement with general search
-      if (allProducts.length < 4) {
+      if (allProducts.length === 0) {
         try {
           const webResults = await this.search_google(q);
           allProducts.push(...webResults);
