@@ -2722,6 +2722,75 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
                   </div>
                 </div>
               )}
+
+              {/* Live Competitor Benchmarks (Powered by SerpApi) */}
+              {fairPricing.marketBenchmark && (
+                <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
+                        <Globe className="w-4 h-4" />
+                      </span>
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-900">
+                          Live Marketplace Competitor Benchmarks (SerpApi)
+                        </h4>
+                        <p className="text-[11px] text-stone-500">
+                          {fairPricing.marketBenchmark.sourceSummary ||
+                            `Grounded in ${fairPricing.marketBenchmark.competitorsFound || 0} active marketplace listings across Google Shopping, Amazon, Flipkart & Etsy`}
+                        </p>
+                      </div>
+                    </div>
+                    {fairPricing.marketBenchmark.medianMarketPrice && (
+                      <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-800 rounded-full border border-amber-200">
+                        Market Median: ₹{fairPricing.marketBenchmark.medianMarketPrice}
+                      </span>
+                    )}
+                  </div>
+
+                  {fairPricing.marketBenchmark.topCompetitors &&
+                    fairPricing.marketBenchmark.topCompetitors.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block">
+                          Comparable Live Listings:
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {fairPricing.marketBenchmark.topCompetitors.map((comp, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 bg-stone-50 hover:bg-stone-100/80 rounded-xl border border-stone-200 transition-colors flex items-start justify-between gap-2 text-xs"
+                            >
+                              <div className="space-y-1 min-w-0">
+                                <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-200 text-stone-700">
+                                  {comp.source}
+                                </span>
+                                <p className="font-medium text-stone-900 line-clamp-2 text-[11px]">
+                                  {comp.title}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="font-bold text-stone-900 text-sm">
+                                  {comp.price ? `₹${comp.price}` : 'Check Site'}
+                                </div>
+                                {comp.url && (
+                                  <a
+                                    href={comp.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center space-x-0.5 text-[10px] text-amber-700 hover:text-amber-800 mt-1 font-medium"
+                                  >
+                                    <span>View</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           )}
 

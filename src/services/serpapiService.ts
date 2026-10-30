@@ -85,7 +85,7 @@ export class SerpApiService {
     });
 
     const res = await fetch(`https://serpapi.com/search?${params.toString()}`, {
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(12000),
     });
     if (res.status === 401) {
       throw new Error("SERPAPI_AUTH_FAILED");
@@ -155,7 +155,7 @@ export class SerpApiService {
     });
 
     const res = await fetch(`https://serpapi.com/search?${params.toString()}`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(10000),
     });
     if (res.status === 401) throw new Error("SERPAPI_AUTH_FAILED");
     if (res.status === 429) throw new Error("SERPAPI_RATE_LIMIT");

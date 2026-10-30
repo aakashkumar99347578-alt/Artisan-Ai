@@ -893,7 +893,7 @@ Output strictly valid JSON.`;
 });
 
 // Helper to construct complete downstream packages (Catalog, SEO, Pricing & Demand)
-function buildCompleteProductPackage(a: any) {
+function buildCompleteProductPackage(a: any, liveMarketStats?: any, liveCompetitors?: any[]) {
   const title = a.product_name || a.short_title || "Handcrafted Artisan Specialty Piece";
   const shortTitle = a.short_title || title.slice(0, 35);
   const category = a.category || "Handicrafts & Decor";
@@ -1020,14 +1020,18 @@ function buildCompleteProductPackage(a: any) {
     ],
   };
 
-  // Dynamic category-calibrated fair pricing
+  // Dynamic category-calibrated fair pricing, prioritizing real live SerpApi market data if available
   const cat = (category + " " + (subcategory || "") + " " + title).toLowerCase();
   let baseRetail = 950;
   let baseB2B = 650;
   let baseBulk = 550;
   let laborDays = 3;
 
-  if (
+  if (liveMarketStats && typeof liveMarketStats.recommendedPrice === "number" && liveMarketStats.recommendedPrice > 0) {
+    baseRetail = Math.round(liveMarketStats.recommendedPrice);
+    baseB2B = Math.round(baseRetail * 0.68);
+    baseBulk = Math.round(baseRetail * 0.58);
+  } else if (
     cat.includes("paint") ||
     cat.includes("madhubani") ||
     cat.includes("mithila") ||
@@ -1087,17 +1091,51 @@ function buildCompleteProductPackage(a: any) {
     laborDays = 2;
   }
 
+  const minFairPrice =
+    liveMarketStats && typeof liveMarketStats.min === "number" && liveMarketStats.min > 0
+      ? Math.round(liveMarketStats.min)
+      : Math.round(baseRetail * 0.8);
+  const maxFairPrice =
+    liveMarketStats && typeof liveMarketStats.max === "number" && liveMarketStats.max > 0
+      ? Math.round(liveMarketStats.max)
+      : Math.round(baseRetail * 1.25);
+
+  const marketBenchmark =
+    liveCompetitors && liveCompetitors.length > 0
+      ? {
+          competitorsFound: liveCompetitors.length,
+          priceRange: `₹${minFairPrice} – ₹${maxFairPrice}`,
+          medianMarketPrice: liveMarketStats?.median || baseRetail,
+          topCompetitors: liveCompetitors.slice(0, 5).map((p: any) => ({
+            source: p.source || "Marketplace",
+            title: p.title || "Craft item",
+            price: typeof p.price === "number" ? p.price : null,
+            rating: typeof p.rating === "number" ? p.rating : null,
+            url: p.url || p.link,
+          })),
+          sourceSummary: `Benchmarked across ${liveCompetitors.length} active listings on Google Shopping & online marketplaces (Amazon, Flipkart, Etsy, Jaypore, etc.)`,
+        }
+      : undefined;
+
+  const reasoning = liveMarketStats?.reasoning
+    ? [
+        liveMarketStats.reasoning,
+        `Grounded in ${liveCompetitors?.length || 0} active live listings across Indian craft marketplaces (Amazon, Flipkart, Etsy, Jaypore, etc.).`,
+        `Guarantees fair livable wages for master artisans while keeping e-commerce pricing competitive.`,
+      ]
+    : [
+        `Calculated from approximately ${laborDays} days of dedicated master artisan handwork for ${category}.`,
+        `Reflects genuine raw ${material} materials and specialized workshop finishing.`,
+        `Guarantees fair livable wages for master artisans while keeping e-commerce pricing competitive.`,
+      ];
+
   const pricing = {
     estimated_price: baseRetail,
-    minimum_fair_price: Math.round(baseRetail * 0.8),
-    maximum_fair_price: Math.round(baseRetail * 1.25),
+    minimum_fair_price: minFairPrice,
+    maximum_fair_price: maxFairPrice,
     currency: "INR",
-    confidence: "High",
-    reasoning: [
-      `Calculated from approximately ${laborDays} days of dedicated master artisan handwork for ${category}.`,
-      `Reflects genuine raw ${material} materials and specialized workshop finishing.`,
-      `Guarantees fair livable wages for master artisans while keeping e-commerce pricing competitive.`,
-    ],
+    confidence: liveMarketStats ? "High (Live Market Grounded)" : "High",
+    reasoning,
     suggestedRetailPrice: baseRetail,
     suggestedB2BPrice: baseB2B,
     suggestedBulkPrice: baseBulk,
@@ -1107,6 +1145,7 @@ function buildCompleteProductPackage(a: any) {
       packagingAndFinishing: Math.round(baseRetail * 0.09),
       artisanFairMargin: Math.round(baseRetail * 0.18),
     },
+    marketBenchmark,
   };
 
   // Demand intelligence
@@ -1549,7 +1588,112 @@ Output strictly valid JSON with this exact schema:
     });
 
     const parsed = JSON.parse(cleanJsonString(response.text || "{}"));
+
+    // 1. SerpApi Live Market Intelligence: Query real-time listings on Google Shopping & online marketplaces
+    let liveMarketProducts: any[] = [];
+    let liveMarketStats: any = null;
+    if (serpapiService.isConfigured()) {
+      try {
+        const candidateTerms = [
+          parsed.exact_detected_item,
+          contextHint,
+          parsed.short_title,
+          parsed.product_name,
+        ].filter((t): t is string => typeof t === "string" && t.trim().length > 2);
+
+        // Pick concise search phrase (e.g. "Madhubani Painting" or "Handcrafted Brass Diya")
+        let searchQuery = candidateTerms[0] || `${parsed.category || "Handicrafts"} India`;
+        searchQuery = searchQuery.replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
+
+        console.log(`[SerpApi] Initiating live market research for query: "${searchQuery}"`);
+        const shoppingResults = await serpapiService
+          .search_google_shopping(searchQuery)
+          .catch((err) => {
+            console.warn("[SerpApi Shopping Warning]:", err?.message || err);
+            return [];
+          });
+
+        let combined = shoppingResults;
+        if (combined.length < 4) {
+          const webResults = await serpapiService
+            .search_google(searchQuery)
+            .catch((err) => {
+              console.warn("[SerpApi Google Web Warning]:", err?.message || err);
+              return [];
+            });
+          combined = [...combined, ...webResults];
+        }
+
+        liveMarketProducts = serpapiService.deduplicate_results(combined);
+        console.log(`[SerpApi] Retrieved ${liveMarketProducts.length} live competitor listings.`);
+        if (liveMarketProducts.length > 0) {
+          liveMarketStats = serpapiService.calculate_price_statistics(liveMarketProducts);
+          console.log(`[SerpApi] Price stats: min ₹${liveMarketStats?.min}, max ₹${liveMarketStats?.max}, median ₹${liveMarketStats?.median}, recommended ₹${liveMarketStats?.recommendedPrice}`);
+        }
+      } catch (serpErr: any) {
+        console.warn("SerpApi live market research notice in image-analyze:", serpErr?.message || serpErr);
+      }
+    }
+
+    // 2. Synthesize dynamic, bespoke e-commerce copy using live competitor marketplace benchmarks
+    let dynamicEnrichment: any = null;
+    if (ai && liveMarketProducts.length > 0) {
+      try {
+        const top5Competitors = liveMarketProducts.slice(0, 5).map((p: any, idx: number) => 
+          `${idx + 1}. "${p.title}" | Price: ₹${p.price || "N/A"} | Platform: ${p.source}`
+        ).join("\n");
+
+        const enrichmentPrompt = `You are an elite e-commerce catalog copywriter for authentic Indian crafts.
+Our vision AI inspected an artisan craft piece:
+- Exact Item: ${parsed.exact_detected_item || parsed.product_name || "Artisan Craft"}
+- Category: ${parsed.category || "Handicrafts & Decor"}
+- Material: ${parsed.material || "Natural Materials"}
+- Color: ${parsed.color || "Natural Colors"}
+- Style & Technique: ${parsed.style || "Traditional"} - ${parsed.craft_technique || "Handmade"}
+- Visual Traits: ${JSON.stringify(parsed.visible_features || [])}
+
+Real live competitor listings currently selling on Google Shopping, Amazon, Flipkart, Etsy, Jaypore:
+${top5Competitors}
+
+TASK:
+Write authentic, high-converting, dynamic e-commerce details tailored to this product. DO NOT use generic templates or repetitive clichés. Reflect how successful items in this craft are described and valued online.
+
+Return ONLY a JSON object with this exact schema:
+{
+  "product_name": "Authentic, appealing e-commerce title (<70 chars)",
+  "short_title": "Concise display title (<35 chars)",
+  "short_description": "2 engaging sentences highlighting authentic artisan appeal, texture, and everyday/decor use",
+  "detailed_description": "Rich 2-3 paragraph description explaining craft technique, raw materials, heritage value, and placement styling",
+  "craft_story": "Engaging cultural story of this specific craft tradition and artisan community",
+  "highlights": ["5 specific, high-converting bullet points highlighting authentic features, handwork, and value"],
+  "features": ["4-5 specific aesthetic and structural traits observed"],
+  "care_instructions": "Practical, material-specific care advice",
+  "seo_title": "SEO title (<65 chars)",
+  "meta_description": "Meta description (<155 chars)",
+  "hindi_translation": {
+    "title": "प्राकृतिक और आकर्षक हिंदी शीर्षक",
+    "short_description": "2 वाक्यों का संक्षिप्त हिंदी विवरण",
+    "craft_story": "शिल्पकला की विरासत और कारीगरी की कहानी हिंदी में"
+  }
+}`;
+
+        const enrichRes = await callGeminiSafe(ai, {
+          model: "gemini-3.8-flash",
+          contents: [enrichmentPrompt],
+          config: { responseMimeType: "application/json" },
+        });
+
+        if (enrichRes.text) {
+          dynamicEnrichment = JSON.parse(cleanJsonString(enrichRes.text));
+        }
+      } catch (copyErr: any) {
+        console.warn("Dynamic copy enrichment notice:", copyErr?.message || copyErr);
+      }
+    }
+
+    const active = dynamicEnrichment || {};
     const generatedTitle =
+      active.product_name ||
       parsed.product_name ||
       parsed.short_title ||
       (parsed.exact_detected_item ? `Artisan Handcrafted ${parsed.exact_detected_item}` : "Handcrafted Artisan Specialty Piece");
@@ -1567,16 +1711,21 @@ Output strictly valid JSON with this exact schema:
       style: parsed.style || "Traditional Folk Artisan",
       craft_technique: parsed.craft_technique || "Master handcrafted finish",
       short_description:
+        active.short_description ||
         parsed.short_description ||
         `Exquisite ${generatedTitle.toLowerCase()} handcrafted from ${generatedMaterial.toLowerCase()}, showcasing authentic artisan craftsmanship.`,
       detailed_description:
+        active.detailed_description ||
         parsed.detailed_description ||
         `Every piece of this ${generatedTitle.toLowerCase()} is painstakingly crafted using traditional techniques. Made with ${generatedMaterial.toLowerCase()} featuring ${generatedColor.toLowerCase()}, this distinctive craft item seamlessly blends rich heritage with elegant decor and utility.`,
       craft_story:
+        active.craft_story ||
         parsed.craft_story ||
         `Handmade with generations of traditional artisan mastery, this ${generatedTitle.toLowerCase()} preserves indigenous craft techniques passed down through generations of skilled craftsmen.`,
       highlights:
-        Array.isArray(parsed.highlights) && parsed.highlights.length > 0
+        Array.isArray(active.highlights) && active.highlights.length > 0
+          ? active.highlights
+          : Array.isArray(parsed.highlights) && parsed.highlights.length > 0
           ? parsed.highlights
           : [
             "100% Handcrafted using authentic artisan techniques",
@@ -1586,7 +1735,9 @@ Output strictly valid JSON with this exact schema:
             "Eco-friendly and durable design",
           ],
       features:
-        Array.isArray(parsed.features) && parsed.features.length > 0
+        Array.isArray(active.features) && active.features.length > 0
+          ? active.features
+          : Array.isArray(parsed.features) && parsed.features.length > 0
           ? parsed.features
           : ["Handcrafted construction", "Natural material texture", "Artisan finish"],
       benefits:
@@ -1598,6 +1749,7 @@ Output strictly valid JSON with this exact schema:
           ? parsed.likely_use_cases
           : ["Home & living room decor", "Cultural festive gifting", "Traditional rituals"],
       care_instructions:
+        active.care_instructions ||
         parsed.care_instructions || "Gently wipe with dry soft cloth. Keep away from harsh moisture and extreme direct heat.",
       tags:
         Array.isArray(parsed.tags) && parsed.tags.length > 0
@@ -1607,11 +1759,12 @@ Output strictly valid JSON with this exact schema:
         Array.isArray(parsed.keywords) && parsed.keywords.length > 0
           ? parsed.keywords
           : [generatedTitle, generatedMaterial, generatedCategory, "authentic Indian craft"].filter(Boolean),
-      seo_title: parsed.seo_title || `${generatedTitle} | Authentic Indian Handmade Craft | KalaSetu`,
+      seo_title: active.seo_title || parsed.seo_title || `${generatedTitle} | Authentic Indian Handmade Craft | KalaSetu`,
       meta_description:
+        active.meta_description ||
         parsed.meta_description ||
         `Buy authentic ${generatedTitle.toLowerCase()} made of genuine ${generatedMaterial.toLowerCase()}. 100% handmade by master Indian artisans with direct fair-trade pricing.`,
-      hindi_translation: parsed.hindi_translation || {
+      hindi_translation: active.hindi_translation || parsed.hindi_translation || {
         title: `हस्तनिर्मित ${generatedTitle}`,
         short_description: `प्राकृतिक सामग्री से बना हस्तनिर्मित उत्कृष्ट पारंपरिक कला उत्पाद।`,
         craft_story: `पारंपरिक भारतीय हस्तकला की समृद्ध धरोहर से प्रेरित, कुशल कारीगरों द्वारा हस्तनिर्मित।`,
@@ -1637,7 +1790,7 @@ Output strictly valid JSON with this exact schema:
       ],
     };
 
-    const packageData = buildCompleteProductPackage(finalAnalysis);
+    const packageData = buildCompleteProductPackage(finalAnalysis, liveMarketStats, liveMarketProducts);
 
     return res.json({
       success: true,
