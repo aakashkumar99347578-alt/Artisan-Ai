@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 export type LanguageCode = 'en' | 'hi' | 'gu' | 'bn' | 'ta' | 'mr';
 
@@ -358,14 +358,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return 'en';
   });
 
-  const setLanguage = (code: LanguageCode) => {
+  const setLanguage = useCallback((code: LanguageCode) => {
     setLanguageState(code);
     try {
       localStorage.setItem('kalasetu_app_language', code);
     } catch (e) {}
-  };
+  }, []);
 
-  const t = (key: string, fallback?: string): string => {
+  const t = useCallback((key: string, fallback?: string): string => {
     const langDict = TRANSLATIONS[language];
     if (langDict && langDict[key]) {
       return langDict[key];
@@ -375,12 +375,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return TRANSLATIONS.en[key];
     }
     return fallback || key;
-  };
+  }, [language]);
 
   const isHindiOrRegional = language !== 'en';
 
+  const contextValue = useMemo(() => ({
+    language,
+    setLanguage,
+    t,
+    isHindiOrRegional,
+  }), [language, setLanguage, t, isHindiOrRegional]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isHindiOrRegional }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

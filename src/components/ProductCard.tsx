@@ -1,6 +1,6 @@
 import React from 'react';
 import { Product } from '../types';
-import { Heart, ShoppingBag, Star, Sparkles, MapPin, Building2 } from 'lucide-react';
+import { Heart, ShoppingBag, Star, MapPin, Building2 } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -11,7 +11,7 @@ interface ProductCardProps {
   onBulkInquiry: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export const ProductCard = React.memo<ProductCardProps>(({
   product,
   isWishlisted,
   onToggleWishlist,
@@ -83,7 +83,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <span className="font-medium text-[#5A3924] truncate">{product.artisan_name}</span>
           <span className="flex items-center gap-0.5 shrink-0 text-[#8C7A6B]">
             <MapPin className="w-3 h-3 text-[#C85A32]" />
-            {product.region.split(',')[0]}
+            {product.region?.split(',')[0] || product.state || 'India'}
           </span>
         </div>
 
@@ -155,4 +155,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';

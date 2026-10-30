@@ -17,34 +17,61 @@ import { Hero } from './components/Hero';
 import { CategoryCarousel } from './components/CategoryCarousel';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetailsModal } from './components/ProductDetailsModal';
-import { ArtisanProfileModal } from './components/ArtisanProfileModal';
-import { BulkInquiryModal } from './components/BulkInquiryModal';
-import { InquiryChatModal } from './components/InquiryChatModal';
-import { AiProductCreationStudio } from './components/AiProductCreationStudio';
-import { CallbackRequestModal } from './components/CallbackRequestModal';
 import { CartDrawer } from './components/CartDrawer';
-import { CheckoutModal } from './components/CheckoutModal';
-import { CustomerDashboard } from './components/CustomerDashboard';
-import { ArtisanDashboard } from './components/ArtisanDashboard';
-import { SupportDashboard } from './components/SupportDashboard';
-import { AdminDashboard } from './components/AdminDashboard';
 import { RegionalCraftDiscovery } from './components/RegionalCraftDiscovery';
 import { TrendingSection } from './components/TrendingSection';
 import { ShopCatalog } from './components/ShopCatalog';
 import { Footer } from './components/Footer';
-import { AuthScreen } from './components/AuthScreen';
-import { Brand3DMotionIntro } from './components/Brand3DMotionIntro';
-import { SupabaseModal } from './components/SupabaseModal';
+
+// Code Splitting & Lazy Loading for heavy components and secondary views
+const AiProductCreationStudio = React.lazy(() =>
+  import('./components/AiProductCreationStudio').then((m) => ({ default: m.AiProductCreationStudio }))
+);
+const Brand3DMotionIntro = React.lazy(() =>
+  import('./components/Brand3DMotionIntro').then((m) => ({ default: m.Brand3DMotionIntro }))
+);
+const AuthScreen = React.lazy(() =>
+  import('./components/AuthScreen').then((m) => ({ default: m.AuthScreen }))
+);
+const AdminDashboard = React.lazy(() =>
+  import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const ArtisanDashboard = React.lazy(() =>
+  import('./components/ArtisanDashboard').then((m) => ({ default: m.ArtisanDashboard }))
+);
+const CustomerDashboard = React.lazy(() =>
+  import('./components/CustomerDashboard').then((m) => ({ default: m.CustomerDashboard }))
+);
+const SupportDashboard = React.lazy(() =>
+  import('./components/SupportDashboard').then((m) => ({ default: m.SupportDashboard }))
+);
+const SupabaseModal = React.lazy(() =>
+  import('./components/SupabaseModal').then((m) => ({ default: m.SupabaseModal }))
+);
+const BulkInquiryModal = React.lazy(() =>
+  import('./components/BulkInquiryModal').then((m) => ({ default: m.BulkInquiryModal }))
+);
+const InquiryChatModal = React.lazy(() =>
+  import('./components/InquiryChatModal').then((m) => ({ default: m.InquiryChatModal }))
+);
+const CallbackRequestModal = React.lazy(() =>
+  import('./components/CallbackRequestModal').then((m) => ({ default: m.CallbackRequestModal }))
+);
+const CheckoutModal = React.lazy(() =>
+  import('./components/CheckoutModal').then((m) => ({ default: m.CheckoutModal }))
+);
+const ArtisanProfileModal = React.lazy(() =>
+  import('./components/ArtisanProfileModal').then((m) => ({ default: m.ArtisanProfileModal }))
+);
+
 import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
   Star,
-  CheckCircle2,
   Heart,
   HelpCircle,
   Phone,
-  BookOpen,
   MapPin,
 } from 'lucide-react';
 
@@ -175,20 +202,24 @@ export default function App() {
   // STAGE 1: Authentication Screen (Sign In & Sign Up)
   if (appStage === 'auth') {
     return (
-      <AuthScreen
-        onAuthSuccess={handleAuthSuccess}
-        onContinueAsGuest={handleContinueAsGuest}
-      />
+      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FAF7F2]"><div className="w-8 h-8 border-3 border-[#C85A32] border-t-transparent rounded-full animate-spin" /></div>}>
+        <AuthScreen
+          onAuthSuccess={handleAuthSuccess}
+          onContinueAsGuest={handleContinueAsGuest}
+        />
+      </React.Suspense>
     );
   }
 
   // STAGE 2: 3D Motion Effect Sequence with Website Name ("KalaSetu")
   if (appStage === 'motion_intro') {
     return (
-      <Brand3DMotionIntro
-        currentUser={currentUser}
-        onComplete={handleIntroComplete}
-      />
+      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#FAF7F2]"><div className="w-8 h-8 border-3 border-[#C85A32] border-t-transparent rounded-full animate-spin" /></div>}>
+        <Brand3DMotionIntro
+          currentUser={currentUser}
+          onComplete={handleIntroComplete}
+        />
+      </React.Suspense>
     );
   }
 
@@ -765,45 +796,53 @@ export default function App() {
         {/* ======================================================== */}
         {/* VIEW: ROLE DASHBOARDS */}
         {/* ======================================================== */}
-        {activeNav === 'customer_dashboard' && (
-          <CustomerDashboard
-            currentUser={currentUser}
-            orders={orders}
-            inquiries={inquiries}
-            quotes={quotes}
-            wishlistProducts={wishlistProducts}
-            onOpenInquiryChat={(inq) => setActiveChatInquiry(inq)}
-            onSelectProduct={(p) => setSelectedProduct(p)}
-          />
-        )}
+        <React.Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-16 text-center text-[#5A3924] flex items-center justify-center gap-2"><div className="w-6 h-6 border-2 border-[#C85A32] border-t-transparent rounded-full animate-spin" /><span>Loading Dashboard...</span></div>}>
+          {activeNav === 'customer_dashboard' && (
+            <CustomerDashboard
+              currentUser={currentUser}
+              orders={orders}
+              inquiries={inquiries}
+              quotes={quotes}
+              wishlistProducts={wishlistProducts}
+              onOpenInquiryChat={(inq) => setActiveChatInquiry(inq)}
+              onSelectProduct={(p) => setSelectedProduct(p)}
+            />
+          )}
 
-        {activeNav === 'artisan_dashboard' && (
-          <ArtisanDashboard
-            artisan={artisans[0] || {}}
-            products={products}
-            inquiries={inquiries}
-            quotes={quotes}
-            orders={orders}
-            onOpenAiStudio={() => setIsAiStudioOpen(true)}
-            onRequestCallback={() => setIsCallbackModalOpen(true)}
-            onOpenInquiryChat={(inq) => setActiveChatInquiry(inq)}
-            onSelectProduct={(p) => setSelectedProduct(p)}
-          />
-        )}
+          {activeNav === 'artisan_dashboard' && (
+            artisans.length > 0 ? (
+              <ArtisanDashboard
+                artisan={artisans[0]}
+                products={products}
+                inquiries={inquiries}
+                quotes={quotes}
+                orders={orders}
+                onOpenAiStudio={() => setIsAiStudioOpen(true)}
+                onRequestCallback={() => setIsCallbackModalOpen(true)}
+                onOpenInquiryChat={(inq) => setActiveChatInquiry(inq)}
+                onSelectProduct={(p) => setSelectedProduct(p)}
+              />
+            ) : (
+              <div className="max-w-7xl mx-auto px-4 py-16 text-center text-[#5A3924]">
+                No artisan profiles registered yet.
+              </div>
+            )
+          )}
 
-        {activeNav === 'support_dashboard' && (
-          <SupportDashboard callbackRequests={callbackRequests} />
-        )}
+          {activeNav === 'support_dashboard' && (
+            <SupportDashboard callbackRequests={callbackRequests} />
+          )}
 
-        {activeNav === 'admin_dashboard' && (
-          <AdminDashboard
-            artisans={artisans}
-            products={products}
-            inquiries={inquiries}
-            orders={orders}
-            onSelectProduct={(p) => setSelectedProduct(p)}
-          />
-        )}
+          {activeNav === 'admin_dashboard' && (
+            <AdminDashboard
+              artisans={artisans}
+              products={products}
+              inquiries={inquiries}
+              orders={orders}
+              onSelectProduct={(p) => setSelectedProduct(p)}
+            />
+          )}
+        </React.Suspense>
       </main>
 
       {/* Global Modals & Drawers */}
@@ -843,23 +882,25 @@ export default function App() {
         }}
       />
 
-      {/* Artisan Profile Modal */}
-      <ArtisanProfileModal
-        artisan={selectedArtisan}
-        artisanProducts={
-          selectedArtisan ? products.filter((p) => p.artisan_id === selectedArtisan.id) : []
-        }
-        onClose={() => setSelectedArtisan(null)}
-        onSelectProduct={(p) => {
-          setSelectedArtisan(null);
-          setSelectedProduct(p);
-        }}
-        onSendDirectInquiry={(art) => {
-          const firstProduct = products.find((p) => p.artisan_id === art.id);
-          setSelectedArtisan(null);
-          setBulkInquiryProduct(firstProduct || products[0]);
-        }}
-      />
+      {/* Global Modals & Drawers */}
+      <React.Suspense fallback={null}>
+        {/* Artisan Profile Modal */}
+        {selectedArtisan && (
+        <ArtisanProfileModal
+          artisan={selectedArtisan}
+          artisanProducts={products.filter((p) => p.artisan_id === selectedArtisan.id)}
+          onClose={() => setSelectedArtisan(null)}
+          onSelectProduct={(p) => {
+            setSelectedArtisan(null);
+            setSelectedProduct(p);
+          }}
+          onSendDirectInquiry={(art) => {
+            const firstProduct = products.find((p) => p.artisan_id === art.id);
+            setSelectedArtisan(null);
+            setBulkInquiryProduct(firstProduct || products[0]);
+          }}
+        />
+      )}
 
       {/* B2B Bulk Purchase Inquiry Modal */}
       {bulkInquiryProduct && (
@@ -884,8 +925,21 @@ export default function App() {
             setActiveChatInquiry(null);
             const inq = inquiries.find((i) => i.id === quote.inquiry_id);
             const p = products.find((pr) => pr.id === inq?.items[0]?.product_id) || products[0];
-            setCartItems([{ product: { ...p, price: quote.unit_price }, quantity: quote.quantity }]);
-            setIsCheckoutOpen(true);
+            if (p) {
+              const quoteProduct: Product = { ...p, price: quote.unit_price };
+              setCartItems((prev) => {
+                const existingIdx = prev.findIndex((item) => item.product.id === quoteProduct.id);
+                if (existingIdx > -1) {
+                  return prev.map((item, idx) =>
+                    idx === existingIdx
+                      ? { ...item, product: quoteProduct, quantity: quote.quantity }
+                      : item
+                  );
+                }
+                return [...prev, { product: quoteProduct, quantity: quote.quantity }];
+              });
+              setIsCheckoutOpen(true);
+            }
           }}
         />
       )}
@@ -946,6 +1000,7 @@ export default function App() {
         isOpen={isSupabaseModalOpen}
         onClose={() => setIsSupabaseModalOpen(false)}
       />
+      </React.Suspense>
 
       {/* Rich Craft Footer */}
       <Footer

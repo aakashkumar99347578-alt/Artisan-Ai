@@ -21,9 +21,9 @@ function getGeminiClient(customKey?: string): GoogleGenAI | null {
 
   const apiKey =
     rawKey &&
-    rawKey !== "MY_GEMINI_API_KEY" &&
-    rawKey !== "YOUR_GEMINI_API_KEY" &&
-    rawKey.trim() !== ""
+      rawKey !== "MY_GEMINI_API_KEY" &&
+      rawKey !== "YOUR_GEMINI_API_KEY" &&
+      rawKey.trim() !== ""
       ? rawKey.trim()
       : null;
   if (!apiKey) {
@@ -42,7 +42,7 @@ app.get("/api/config/status", (req, res) => {
   const hasKey = Boolean(key && key !== "MY_GEMINI_API_KEY" && key !== "YOUR_GEMINI_API_KEY" && key.trim() !== "");
   res.json({
     hasGeminiKey: hasKey,
-    model: "gemini-2.5-flash",
+    model: "gemini-3.8-flash",
   });
 });
 
@@ -55,13 +55,13 @@ app.post("/api/config/gemini-key", async (req, res) => {
     }
     const cleanKey = rawInputKey.trim();
 
-    // Verify key by making a test call with gemini-2.5-flash or gemini-2.0-flash or gemini-1.5-flash
-    let verifiedModel = "gemini-2.5-flash";
+    // Verify key by making a test call with gemini-3.8-flash
+    let verifiedModel = "gemini-3.8-flash";
     const testAi = new GoogleGenAI({ apiKey: cleanKey });
     let pingSuccess = false;
     let lastErr: any = null;
 
-    for (const testModel of ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]) {
+    for (const testModel of ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash"]) {
       try {
         await testAi.models.generateContent({
           model: testModel,
@@ -82,21 +82,26 @@ app.post("/api/config/gemini-key", async (req, res) => {
     // Save in process memory
     process.env.GEMINI_API_KEY = cleanKey;
 
-    // Persist to .env file if available
+    // Persist to .env file if available and changed
     try {
       const envPath = path.join(process.cwd(), ".env");
       let envContent = "";
       if (fs.existsSync(envPath)) {
         envContent = fs.readFileSync(envPath, "utf-8");
-        if (envContent.includes("GEMINI_API_KEY=")) {
+        const currentMatch = envContent.match(/GEMINI_API_KEY=["']?(.*?)["']?(\r?\n|$)/);
+        if (currentMatch && currentMatch[1] === cleanKey) {
+          // Already identical, skip file rewrite to prevent dev server reload
+        } else if (envContent.includes("GEMINI_API_KEY=")) {
           envContent = envContent.replace(/GEMINI_API_KEY=.*/g, `GEMINI_API_KEY="${cleanKey}"`);
+          fs.writeFileSync(envPath, envContent, "utf-8");
         } else {
           envContent += `\nGEMINI_API_KEY="${cleanKey}"\n`;
+          fs.writeFileSync(envPath, envContent, "utf-8");
         }
       } else {
         envContent = `GEMINI_API_KEY="${cleanKey}"\n`;
+        fs.writeFileSync(envPath, envContent, "utf-8");
       }
-      fs.writeFileSync(envPath, envContent, "utf-8");
     } catch (e) {
       console.warn("Notice: Could not write .env file:", e);
     }
@@ -128,7 +133,7 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     hasGeminiKey,
     hasSerpApiKey: serpapiService.isConfigured(),
-    hasRemoveBgKey: Boolean(process.env.REMOVE_BG_API_KEY || "seWSgxfbpVS4g9v5mEuKU6xV"),
+    hasRemoveBgKey: Boolean(process.env.REMOVE_BG_API_KEY && process.env.REMOVE_BG_API_KEY.trim() !== ""),
     hasHfToken: Boolean(process.env.HF_TOKEN),
     hasSupabaseUrl: Boolean(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
     timestamp: new Date().toISOString(),
@@ -222,6 +227,9 @@ app.post("/api/analytics/track", (req, res) => {
     };
 
     analyticsEventsStore.push(newRecord);
+    if (analyticsEventsStore.length > 2000) {
+      analyticsEventsStore.splice(0, analyticsEventsStore.length - 2000);
+    }
     return res.json({ success: true, eventId: newRecord.id });
   } catch (err: any) {
     return res.status(500).json({ error: err?.message || "Failed to record event" });
@@ -424,12 +432,13 @@ function parseVoiceTranscriptText(rawText: string, languageHint?: string) {
 
 // Robust wrapper for Gemini model calls with fast automatic fallback on 503/429 spikes or model transitions
 async function callGeminiSafe(ai: any, generateParams: any) {
-  const primaryModel = generateParams.model || "gemini-2.5-flash";
+  const primaryModel = generateParams.model || "gemini-3.8-flash";
   const candidateModels = [
     primaryModel,
-    "gemini-2.5-flash",
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-flash",
   ].filter((v, i, a) => a.indexOf(v) === i);
 
   let lastError: any = null;
@@ -539,7 +548,7 @@ Output strictly JSON matching the required schema.`;
     });
 
     const response = await callGeminiSafe(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents,
       config: {
         responseMimeType: "application/json",
@@ -711,7 +720,7 @@ app.post("/api/ai/hf-whisper", async (req, res) => {
     if (ai) {
       try {
         const response = await callGeminiSafe(ai, {
-          model: "gemini-2.5-flash",
+          model: "gemini-3.8-flash",
           contents: [
             {
               inlineData: {
@@ -781,7 +790,8 @@ app.post("/api/ai/voice-intent", async (req, res) => {
       return res.status(400).json({ success: false, error: "Transcript is required" });
     }
 
-    const ai = getGeminiClient();
+    const clientKey = req.headers["x-gemini-api-key"] as string;
+    const ai = getGeminiClient(clientKey);
 
     // Default structured template
     const defaultIntent = {
@@ -829,7 +839,7 @@ Output strictly valid JSON.`;
     try {
       // First attempt
       const response = await callGeminiSafe(ai, {
-        model: "gemini-2.5-flash",
+        model: "gemini-3.8-flash",
         contents: basePrompt,
         config: {
           responseMimeType: "application/json",
@@ -842,7 +852,7 @@ Output strictly valid JSON.`;
       // Retry once with stricter structured-output instructions as specified in prompt
       try {
         const retryResponse = await callGeminiSafe(ai, {
-          model: "gemini-2.5-flash",
+          model: "gemini-3.8-flash",
           contents: `${basePrompt}\n\nCRITICAL: Return ONLY raw JSON starting with '{' and ending with '}'. Do NOT include markdown blocks or any conversational text.`,
           config: {
             responseMimeType: "application/json",
@@ -907,19 +917,19 @@ function buildCompleteProductPackage(a: any) {
     Array.isArray(a.highlights) && a.highlights.length > 0
       ? a.highlights
       : [
-          "100% Handcrafted using authentic artisan techniques",
-          `Made with genuine ${material}`,
-          `Distinctive ${color} natural finish`,
-          "Direct from artisan with fair-trade transparency",
-          "Eco-friendly and durable design",
-        ];
+        "100% Handcrafted using authentic artisan techniques",
+        `Made with genuine ${material}`,
+        `Distinctive ${color} natural finish`,
+        "Direct from artisan with fair-trade transparency",
+        "Eco-friendly and durable design",
+      ];
 
   const features =
     Array.isArray(a.features) && a.features.length > 0
       ? a.features
       : Array.isArray(a.visible_features) && a.visible_features.length > 0
-      ? a.visible_features
-      : ["Handcrafted construction", `Natural ${material} texture`, "Artisan finish"];
+        ? a.visible_features
+        : ["Handcrafted construction", `Natural ${material} texture`, "Artisan finish"];
 
   const benefits =
     Array.isArray(a.benefits) && a.benefits.length > 0
@@ -1365,18 +1375,56 @@ app.post("/api/ai/image-analyze", async (req, res) => {
       return res.status(400).json({ success: false, error: "No image data provided" });
     }
 
-    // Clean base64 and resolve remote URLs if needed
+    // Clean base64 and resolve local paths or remote URLs if needed
     let cleanBase64 = imageBase64;
     let detectedMime = mimeType || "image/jpeg";
 
-    if (typeof imageBase64 === "string" && (imageBase64.startsWith("http://") || imageBase64.startsWith("https://"))) {
+    if (
+      typeof imageBase64 === "string" &&
+      (imageBase64.startsWith("/sample-crafts") ||
+        imageBase64.startsWith("sample-crafts") ||
+        imageBase64.includes("public/sample-crafts"))
+    ) {
       try {
-        const imgRes = await fetch(imageBase64);
-        const buf = Buffer.from(await imgRes.arrayBuffer());
-        cleanBase64 = buf.toString("base64");
-        const contentType = imgRes.headers.get("content-type");
-        if (contentType) {
-          detectedMime = contentType.split(";")[0].trim();
+        const relPath = imageBase64.replace(/^\//, "");
+        const localPath = path.resolve(
+          process.cwd(),
+          "public",
+          relPath.replace(/^sample-crafts[\/\\]/, "sample-crafts/")
+        );
+        if (fs.existsSync(localPath)) {
+          const buf = fs.readFileSync(localPath);
+          cleanBase64 = buf.toString("base64");
+          if (localPath.endsWith(".png")) detectedMime = "image/png";
+          else if (localPath.endsWith(".webp")) detectedMime = "image/webp";
+          else detectedMime = "image/jpeg";
+        }
+      } catch (err: any) {
+        console.warn("Could not read local sample craft image:", err?.message);
+      }
+    } else if (
+      typeof imageBase64 === "string" &&
+      (imageBase64.startsWith("http://") || imageBase64.startsWith("https://"))
+    ) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const imgRes = await fetch(imageBase64, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            Accept: "image/*,*/*;q=0.8",
+          },
+        });
+        clearTimeout(timeoutId);
+        if (imgRes.ok) {
+          const buf = Buffer.from(await imgRes.arrayBuffer());
+          cleanBase64 = buf.toString("base64");
+          const contentType = imgRes.headers.get("content-type");
+          if (contentType) {
+            detectedMime = contentType.split(";")[0].trim();
+          }
         }
       } catch (fetchErr: any) {
         console.warn("Could not fetch remote image URL in image-analyze:", fetchErr?.message);
@@ -1476,17 +1524,25 @@ Output strictly valid JSON with this exact schema:
   "confidence": "High"
 }`;
 
-    const response = await callGeminiSafe(ai, {
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          inlineData: {
-            mimeType: detectedMime.startsWith("image/") ? detectedMime : "image/jpeg",
-            data: cleanBase64,
-          },
+    const geminiContents: any[] = [];
+    if (
+      typeof cleanBase64 === "string" &&
+      !cleanBase64.startsWith("http://") &&
+      !cleanBase64.startsWith("https://") &&
+      cleanBase64.length > 20
+    ) {
+      geminiContents.push({
+        inlineData: {
+          mimeType: detectedMime.startsWith("image/") ? detectedMime : "image/jpeg",
+          data: cleanBase64,
         },
-        visionPrompt,
-      ],
+      });
+    }
+    geminiContents.push(visionPrompt);
+
+    const response = await callGeminiSafe(ai, {
+      model: "gemini-3.8-flash",
+      contents: geminiContents,
       config: {
         responseMimeType: "application/json",
       },
@@ -1523,12 +1579,12 @@ Output strictly valid JSON with this exact schema:
         Array.isArray(parsed.highlights) && parsed.highlights.length > 0
           ? parsed.highlights
           : [
-              "100% Handcrafted using authentic artisan techniques",
-              `Made with genuine ${generatedMaterial}`,
-              `Distinctive ${generatedColor} natural finish`,
-              "Direct from artisan with fair-trade transparency",
-              "Eco-friendly and durable design",
-            ],
+            "100% Handcrafted using authentic artisan techniques",
+            `Made with genuine ${generatedMaterial}`,
+            `Distinctive ${generatedColor} natural finish`,
+            "Direct from artisan with fair-trade transparency",
+            "Eco-friendly and durable design",
+          ],
       features:
         Array.isArray(parsed.features) && parsed.features.length > 0
           ? parsed.features
@@ -1645,7 +1701,7 @@ app.post(["/api/ai/hf-segmentation", "/api/ai/remove-background"], async (req, r
       base64String = image;
     }
 
-    const removeBgKey = process.env.REMOVE_BG_API_KEY || "seWSgxfbpVS4g9v5mEuKU6xV";
+    const removeBgKey = process.env.REMOVE_BG_API_KEY || "";
 
     // 1. Primary: Remove.bg API (State of the art 100% transparent PNG cutout)
     if (removeBgKey && removeBgKey.trim() !== "") {
@@ -1792,7 +1848,7 @@ Output strictly JSON matching this schema:
 }`;
 
         const response = await callGeminiSafe(ai, {
-          model: "gemini-2.5-flash",
+          model: "gemini-3.8-flash",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -1900,7 +1956,7 @@ Output strictly JSON matching this schema:
 }`;
 
     const response = await callGeminiSafe(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2021,7 +2077,7 @@ Output strictly JSON:
 }`;
 
       const response = await callGeminiSafe(ai, {
-        model: "gemini-2.5-flash",
+        model: "gemini-3.8-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -2094,7 +2150,7 @@ Product Data: ${JSON.stringify(productData)}
 Artisan Data: ${JSON.stringify(artisanData || {})}`;
 
     const response = await callGeminiSafe(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2222,7 +2278,7 @@ Labor days: ${laborDays || "Not provided"}
 Never invent fake competitor prices. Clearly explain the rationale considering fair artisan wages, packaging, and bulk wholesale discounts.`;
 
     const response = await callGeminiSafe(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2302,7 +2358,7 @@ Distinguish clearly between OBSERVED SIGNALS and AI ESTIMATES.
 Identify relevant Indian festivals (e.g. Diwali, Raksha Bandhan, Durga Puja, Pongal, Onam, Wedding season) if genuinely relevant. Do not falsely associate unrelated crafts.`;
 
     const response = await callGeminiSafe(ai, {
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2420,7 +2476,7 @@ app.post("/api/market-research", async (req, res) => {
 
     if (ai) {
       try {
-        const topCompetitorSummaries = marketData.topProducts.slice(0, 5).map(p => 
+        const topCompetitorSummaries = marketData.topProducts.slice(0, 5).map(p =>
           `- ${p.title} (${p.source}): ₹${p.price || 'N/A'}, Rating: ${p.rating || 'N/A'}`
         ).join("\n");
 
@@ -2458,7 +2514,7 @@ Generate an optimized marketplace listing strictly as JSON:
 }`;
 
         const aiResponse = await callGeminiSafe(ai, {
-          model: "gemini-2.5-flash",
+          model: "gemini-3.8-flash",
           contents: prompt,
           config: {
             responseMimeType: "application/json",

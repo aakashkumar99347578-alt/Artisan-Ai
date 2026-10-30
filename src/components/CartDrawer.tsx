@@ -118,7 +118,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </button>
                     </div>
                     <p className="text-[11px] text-[#8C7A6B]">
-                      By {item.product.artisan_name} • {item.product.region.split(',')[0]}
+                      By {item.product.artisan_name} • {item.product.region?.split(',')[0] || item.product.state || 'India'}
                     </p>
                   </div>
 

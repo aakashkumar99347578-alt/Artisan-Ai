@@ -1,22 +1,18 @@
-import { GoogleGenAI } from "@google/genai";
+import 'dotenv/config';
+import { serpapiService } from '../src/services/serpapiService.js';
 
-const ai = new GoogleGenAI({ apiKey: "test-fake-key" });
-
-try {
-  // Test the structure
-  const params = {
-    model: "gemini-2.5-flash",
-    contents: [
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-        },
-      },
-      "Describe this image",
-    ],
-  };
-  console.log("Params structure ok");
-} catch (e) {
-  console.error("Params structure error:", e);
+async function test() {
+  console.log('SerpApi configured:', serpapiService.isConfigured());
+  const query = 'Madhubani Folk Art Painting';
+  const shopping = await serpapiService.search_google_shopping(query);
+  console.log('Shopping Results Count:', shopping.length);
+  for (let i = 0; i < Math.min(5, shopping.length); i++) {
+    const p = shopping[i];
+    console.log(`[${i+1}] ${p.source} | ${p.title} | Rs.${p.price}`);
+  }
+  const stats = serpapiService.calculate_price_statistics(shopping);
+  console.log('Price stats:', stats);
 }
+
+test().catch(console.error);
+

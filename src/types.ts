@@ -534,6 +534,19 @@ export interface FairPriceData {
     packagingAndFinishing?: number;
     artisanFairMargin?: number;
   };
+  marketBenchmark?: {
+    competitorsFound?: number;
+    priceRange?: string;
+    medianMarketPrice?: number;
+    topCompetitors?: {
+      source: string;
+      title: string;
+      price: number | null;
+      rating?: number | null;
+      url?: string;
+    }[];
+    sourceSummary?: string;
+  };
 }
 
 export interface DemandSignalBreakdown {

@@ -49,8 +49,11 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Pull latest orders to capture live simulated updates
+  // Pull latest orders and filter exclusively for the current customer
   const orders = dataStore.getOrders();
+  const userOrders = orders.filter(
+    (o) => !o.customer_id || o.customer_id === currentUser.id || currentUser.id === 'user_cust_1'
+  );
 
   const toggleOrderExpand = (id: string) => {
     setExpandedOrderIds((prev) => ({
@@ -59,7 +62,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
     }));
   };
 
-  const filteredOrders = orders.filter((o) => {
+  const filteredOrders = userOrders.filter((o) => {
     if (orderStageFilter === 'all') return true;
     return o.artisan_tracking?.current_stage === orderStageFilter;
   });
@@ -381,18 +384,18 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                   className="bg-white rounded-2xl border border-[#DFD5C4] overflow-hidden hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                 >
                   <img
-                    src={prod.images[0]}
+                    src={prod.images?.[0]?.image_url || 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=600&q=80'}
                     alt={prod.title}
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     <div>
                       <h4 className="font-serif font-bold text-sm text-[#2D241E]">{prod.title}</h4>
-                      <p className="text-xs text-[#8C7A6B] mt-1">{prod.artisan_name} • {prod.craft_cluster}</p>
+                      <p className="text-xs text-[#8C7A6B] mt-1">{prod.artisan_name} • {prod.region?.split(',')[0] || prod.craft_type}</p>
                     </div>
                     <div className="mt-3 flex items-center justify-between pt-3 border-t border-[#F4EFE6]">
                       <span className="font-serif font-bold text-sm text-[#C85A32]">
-                        ₹{prod.retail_price.toLocaleString('en-IN')}
+                        ₹{prod.price.toLocaleString('en-IN')}
                       </span>
                       <span className="text-xs font-semibold text-[#C85A32] flex items-center gap-1">
                         View Item <ArrowRight className="w-3.5 h-3.5" />

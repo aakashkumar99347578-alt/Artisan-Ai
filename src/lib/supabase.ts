@@ -70,17 +70,26 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: 'kalasetu_notifications_v1',
 };
 
-// Initial state helpers
+// Fast in-memory cache to eliminate repetitive synchronous JSON.parse operations
+const memoryCache = new Map<string, any>();
+
+// Initial state helpers with in-memory caching
 function getStored<T>(key: string, defaultVal: T): T {
+  if (memoryCache.has(key)) {
+    return memoryCache.get(key) as T;
+  }
   try {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultVal;
+    const parsed = item ? JSON.parse(item) : defaultVal;
+    memoryCache.set(key, parsed);
+    return parsed;
   } catch (e) {
     return defaultVal;
   }
 }
 
 function setStored<T>(key: string, val: T): void {
+  memoryCache.set(key, val);
   try {
     localStorage.setItem(key, JSON.stringify(val));
   } catch (e) {
@@ -887,7 +896,6 @@ class UnifiedDataStore {
       created_at: new Date().toISOString(),
     };
     messages.push(newMsg);
-    setStored(STORAGE_KEYS.INQUIRIES + '_msgs', messages);
     setStored(STORAGE_KEYS.INQUIRY_MESSAGES, messages);
     this.notify();
     return newMsg;
@@ -1287,7 +1295,7 @@ class UnifiedDataStore {
 
     // If account has a registered password, check it
     if (user.password && passwordAttempt) {
-      if (user.password !== passwordAttempt && passwordAttempt !== 'password123') {
+      if (user.password !== passwordAttempt) {
         return {
           success: false,
           error: 'Incorrect password entered. Please check your credentials.',

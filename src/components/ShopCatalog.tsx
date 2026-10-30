@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, Category } from '../types';
 import { ProductCard } from './ProductCard';
-import { Filter, SlidersHorizontal, Search, X, Check, Building2, MapPin } from 'lucide-react';
+import { SlidersHorizontal, Search, X, Building2 } from 'lucide-react';
 
 interface ShopCatalogProps {
   products: Product[];
@@ -37,9 +37,28 @@ export const ShopCatalog: React.FC<ShopCatalogProps> = ({
   const [sortBy, setSortBy] = useState<'featured' | 'price_low' | 'price_high' | 'rating' | 'trending'>('featured');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  // Precomputed counts for instant rendering without O(N x M) loops
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of products) {
+      counts[p.category_id] = (counts[p.category_id] || 0) + 1;
+    }
+    return counts;
+  }, [products]);
+
+  const stateCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of products) {
+      if (p.state) {
+        counts[p.state] = (counts[p.state] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [products]);
+
   // States available
-  const availableStates = Array.from(new Set(products.map((p) => p.state))).filter(Boolean);
-  const availableCraftTypes = Array.from(new Set(products.map((p) => p.craft_type))).filter(Boolean);
+  const availableStates = useMemo(() => Array.from(new Set(products.map((p) => p.state))).filter(Boolean), [products]);
+  const availableCraftTypes = useMemo(() => Array.from(new Set(products.map((p) => p.craft_type))).filter(Boolean), [products]);
 
   // Filtered products logic
   const filteredProducts = useMemo(() => {
@@ -203,7 +222,7 @@ export const ShopCatalog: React.FC<ShopCatalogProps> = ({
                 >
                   <span className="truncate">{cat.name}</span>
                   <span className="text-[10px] text-[#8C7A6B]">
-                    {products.filter((p) => p.category_id === cat.id).length}
+                    {categoryCounts[cat.id] || 0}
                   </span>
                 </button>
               ))}
@@ -259,7 +278,7 @@ export const ShopCatalog: React.FC<ShopCatalogProps> = ({
                 >
                   <span>{st}</span>
                   <span className="text-[10px] text-[#8C7A6B]">
-                    {products.filter((p) => p.state === st).length}
+                    {stateCounts[st] || 0}
                   </span>
                 </button>
               ))}

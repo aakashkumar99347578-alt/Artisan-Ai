@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, Artisan } from '../types';
 import { Product360Viewer } from './Product360Viewer';
 import {
@@ -12,8 +12,6 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
-  Sparkles,
-  Layers,
   Truck,
   RotateCcw,
   Eye,
@@ -50,6 +48,12 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const [show360Modal, setShow360Modal] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'craft' | 'specs' | 'artisan' | 'shipping'>('craft');
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+    setQuantity(1);
+    setShow360Modal(false);
+  }, [product.id]);
 
   const images = product.images || [
     {

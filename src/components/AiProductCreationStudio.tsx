@@ -119,28 +119,34 @@ interface AiProductCreationStudioProps {
 // Sample craft images for quick testing without manual file uploads
 const SAMPLE_CRAFT_IMAGES = [
   {
-    id: 'pottery',
-    title: 'Terracotta Pottery Diya',
-    category: 'Pottery & Ceramics',
-    url: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80',
+    id: 'madhubani',
+    title: 'Madhubani Folk Painting',
+    category: 'Traditional Paintings',
+    url: '/sample-crafts/madhubani.png',
   },
   {
     id: 'brass',
     title: 'Brass Pooja Diya & Artifact',
     category: 'Brass & Metal Craft',
-    url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=800&q=80',
+    url: '/sample-crafts/brass.jpg',
   },
   {
     id: 'textile',
     title: 'Handloom Silk Saree',
     category: 'Handloom & Textiles',
-    url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+    url: '/sample-crafts/saree.jpg',
   },
   {
     id: 'wood',
     title: 'Hand-Carved Sheesham Woodwork',
     category: 'Woodwork & Carvings',
-    url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+    url: '/sample-crafts/woodwork.jpg',
+  },
+  {
+    id: 'pottery',
+    title: 'Terracotta Pottery Diya',
+    category: 'Pottery & Ceramics',
+    url: '/sample-crafts/pottery.jpg',
   },
 ];
 
@@ -226,6 +232,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
     seo_generation: { status: 'idle' },
     price_analysis: { status: 'idle' },
     demand_analysis: { status: 'idle' },
+    market_research: { status: 'idle' },
   });
 
   const updateJob = (stage: keyof WorkflowJobState, status: JobStatus, error?: string) => {
@@ -455,6 +462,19 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {});
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {}
+      }
     };
   }, []);
 
@@ -494,18 +514,24 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
           analyserRef.current = analyser;
 
           const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          const updateVolume = () => {
+          let lastVolumeUpdate = 0;
+          const updateVolume = (timestamp: number) => {
             if (!analyserRef.current) return;
-            analyserRef.current.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-              sum += dataArray[i];
+            // Throttle volume UI updates to max 15fps (~66ms) to prevent 60-120fps component re-render thrashing
+            if (timestamp - lastVolumeUpdate > 66) {
+              analyserRef.current.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+              }
+              const avg = sum / dataArray.length;
+              const newVol = Math.min(100, Math.round((avg / 128) * 100));
+              setAudioVolume((prev) => (Math.abs(prev - newVol) > 4 ? newVol : prev));
+              lastVolumeUpdate = timestamp;
             }
-            const avg = sum / dataArray.length;
-            setAudioVolume(Math.min(100, Math.round((avg / 128) * 100)));
             animFrameRef.current = requestAnimationFrame(updateVolume);
           };
-          updateVolume();
+          animFrameRef.current = requestAnimationFrame(updateVolume);
         }
       } catch (audioCtxErr) {
         console.warn('AudioContext volume meter notice:', audioCtxErr);
@@ -826,13 +852,40 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
     setIsolatedProductImage(null);
     setGeneratedBackgroundImage(null);
     setMarketResearch(null);
+    setProductAnalysis(null);
     setImageFileDetails({
       name: `${craft.id}_artisan_photo.jpg`,
       size: '1.4 MB',
       dimensions: '1200 x 900 px',
     });
     setProductHint(craft.title);
-    runImageAnalysis(craft.url, `${craft.id}_sample.jpg`, craft.title);
+
+    // Convert local or remote image to base64 for instant zero-latency Gemini Vision analysis
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(850, img.naturalWidth || img.width || 800);
+        canvas.height = Math.round((canvas.width * (img.naturalHeight || img.height || 600)) / (img.naturalWidth || img.width || 800));
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const base64 = canvas.toDataURL(craft.url.endsWith('.png') ? 'image/png' : 'image/jpeg', 0.85);
+          runImageAnalysis(base64, `${craft.id}_sample.jpg`, craft.title);
+        } else {
+          runImageAnalysis(craft.url, `${craft.id}_sample.jpg`, craft.title);
+        }
+      };
+      img.onerror = () => {
+        runImageAnalysis(craft.url, `${craft.id}_sample.jpg`, craft.title);
+      };
+      img.src = craft.url;
+    } catch {
+      runImageAnalysis(craft.url, `${craft.id}_sample.jpg`, craft.title);
+    }
   };
 
   const runImageAnalysis = async (imgUrl: string, fileName?: string, contextHint?: string) => {
@@ -1310,15 +1363,17 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
           },
           {
             id: `img_sec_${Date.now()}`,
-            image_url: SAMPLE_CRAFT_IMAGES[0].url,
+            image_url: isolatedProductImage || uploadedImage,
             image_type: 'natural_studio',
-            alt_text: 'Craft detail view',
+            alt_text: `${catalog.title} detail view`,
             is_primary: false,
           },
         ],
         is_featured: true,
         is_trending: true,
-        festival_tags: ['Diwali', 'Festive Gifting'],
+        festival_tags: demand.festivalRelevance && demand.festivalRelevance.length > 0 
+          ? [demand.festivalRelevance[0].festival, 'Cultural Heritage'] 
+          : ['Handmade Gift', 'Cultural Heritage'],
         views_count: 1,
         wishlist_count: 0,
         inquiry_count: 0,
@@ -1427,7 +1482,7 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
               title="Configure Google Gemini API Key"
             >
               <Key className="w-3.5 h-3.5" />
-              <span>{hasGeminiKey ? 'Gemini 2.5 Active' : 'Set Gemini Key'}</span>
+              <span>{hasGeminiKey ? 'Gemini 3.8 Active' : 'Set Gemini Key'}</span>
             </button>
 
             <button
@@ -1448,9 +1503,9 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
           </div>
         </div>
 
-        {/* Multi-step progress bar */}
-        <div className="bg-stone-100 border-b border-stone-200 px-4 py-2 overflow-x-auto">
-          <div className="flex items-center justify-between min-w-[720px] max-w-5xl mx-auto">
+        {/* Multi-step progress bar (8 Pipeline Stages) */}
+        <div className="bg-white border-b-2 border-stone-300/80 px-4 sm:px-6 pt-4 pb-8 mb-2 overflow-x-auto shadow-xs">
+          <div className="flex items-center justify-between min-w-[780px] max-w-5xl mx-auto gap-2.5">
             {stepTitles.map((step) => {
               const Icon = step.icon;
               const isActive = currentStep === step.num;
@@ -1460,26 +1515,26 @@ export const AiProductCreationStudio: React.FC<AiProductCreationStudioProps> = (
                 <button
                   key={step.num}
                   onClick={() => setCurrentStep(step.num)}
-                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`flex items-center space-x-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs ${
                     isActive
-                      ? 'bg-amber-700 text-white shadow-sm'
+                      ? 'bg-amber-700 text-white shadow-md ring-2 ring-amber-600/30'
                       : isCompleted
-                      ? 'text-stone-700 hover:bg-stone-200/80'
-                      : 'text-stone-400 hover:text-stone-600'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100/80 hover:shadow-sm'
+                      : 'bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200/70 hover:text-stone-900 hover:shadow-sm'
                   }`}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                       isActive
-                        ? 'bg-white text-amber-900'
+                        ? 'bg-white text-amber-900 shadow-xs'
                         : isCompleted
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-stone-300 text-stone-600'
+                        : 'bg-stone-300 text-stone-700'
                     }`}
                   >
                     {isCompleted ? <Check className="w-3 h-3" /> : step.num}
                   </div>
-                  <span className="whitespace-nowrap">{step.title}</span>
+                  <span className="whitespace-nowrap tracking-wide">{step.title}</span>
                 </button>
               );
             })}

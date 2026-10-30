@@ -62,24 +62,41 @@ const ORBITAL_CRAFTS: OrbitalCraft[] = [
   },
 ];
 
+// Stable particle coordinates to prevent erratic teleportation on mousemove
+const PARTICLES = Array.from({ length: 16 }, (_, i) => ({
+  id: i,
+  size: ((i * 7) % 5) + 3,
+  top: `${((i * 23 + 11) % 90) + 5}%`,
+  left: `${((i * 37 + 17) % 90) + 5}%`,
+  duration: 4 + (i % 3) * 2,
+  delay: (i * 0.2) % 3,
+  xOffset: i % 2 === 0 ? 30 : -30,
+}));
+
 export const Brand3DMotionIntro: React.FC<Brand3DMotionIntroProps> = ({
   currentUser,
   onComplete,
-  isReplay = false,
 }) => {
   // Phase state: 0 = 3D assemble, 1 = Brand name typography glow, 2 = Welcome & portal warp, 3 = Complete
   const [phase, setPhase] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const mouseRafRef = useRef<number | null>(null);
 
-  // Parallax mouse movement calculation
+  // Parallax mouse movement with RAF throttling for 60fps smoothness
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
+    if (mouseRafRef.current) return;
+
     const rect = containerRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setMousePos({ x, y });
+
+    mouseRafRef.current = requestAnimationFrame(() => {
+      setMousePos({ x, y });
+      mouseRafRef.current = null;
+    });
   };
 
   // Timeline orchestration
@@ -106,10 +123,7 @@ export const Brand3DMotionIntro: React.FC<Brand3DMotionIntroProps> = ({
     // Progress bar ticker
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
+        if (prev >= 100) return 100;
         return prev + 5;
       });
     }, 80);
@@ -120,6 +134,7 @@ export const Brand3DMotionIntro: React.FC<Brand3DMotionIntroProps> = ({
       clearTimeout(timer3);
       clearTimeout(timerComplete);
       clearInterval(interval);
+      if (mouseRafRef.current) cancelAnimationFrame(mouseRafRef.current);
     };
   }, [onComplete]);
 
@@ -181,28 +196,28 @@ export const Brand3DMotionIntro: React.FC<Brand3DMotionIntroProps> = ({
         />
 
         {/* Floating golden embers / particles */}
-        {[...Array(16)].map((_, i) => (
+        {PARTICLES.map((p) => (
           <motion.div
-            key={i}
+            key={p.id}
             className="absolute rounded-full bg-gradient-to-tr from-[#E27D26] to-[#FCE77D]"
             style={{
-              width: Math.random() * 5 + 2,
-              height: Math.random() * 5 + 2,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
+              width: p.size,
+              height: p.size,
+              top: p.top,
+              left: p.left,
               filter: 'blur(0.5px)',
             }}
             animate={{
               y: [0, -70, 0],
-              x: [0, (i % 2 === 0 ? 30 : -30), 0],
+              x: [0, p.xOffset, 0],
               opacity: [0.2, 0.9, 0.2],
               scale: [0.8, 1.3, 0.8],
             }}
             transition={{
-              duration: 4 + (i % 3) * 2,
+              duration: p.duration,
               repeat: Infinity,
               ease: 'easeInOut',
-              delay: (i * 0.2) % 3,
+              delay: p.delay,
             }}
           />
         ))}
