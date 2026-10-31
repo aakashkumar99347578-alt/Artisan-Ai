@@ -233,30 +233,37 @@ export async function analyzeProductImage(
     let prodColor = 'Rich Earthy Artisan Palette';
     let retailPrice = 1250;
 
-    if (hint.includes('paint') || hint.includes('art') || hint.includes('madhubani') || hint.includes('mithila') || hint.includes('warli') || hint.includes('pattachitra') || hint.includes('canvas')) {
+    if (hint.includes('sandal') || hint.includes('chappal') || hint.includes('kolhapuri') || hint.includes('mojari') || hint.includes('jutti') || hint.includes('shoe') || hint.includes('footwear')) {
+      prodTitle = 'Genuine Leather Tan Brown Kolhapuri Sandal with Metal Buckle and Hand-Stitched Sole';
+      prodCategory = 'Footwear & Leathercraft';
+      prodSubcategory = 'Kolhapuri Sandals & Chappals';
+      prodMaterial = 'Vegetable-Tanned Genuine Leather & Brass Buckle';
+      prodColor = 'Tan Brown & Antique Brass';
+      retailPrice = 1450;
+    } else if (hint.includes('paint') || hint.includes('art') || hint.includes('madhubani') || hint.includes('mithila') || hint.includes('warli') || hint.includes('pattachitra') || hint.includes('canvas')) {
       prodTitle = 'Original Hand-Painted Madhubani Fish & Tree of Life Canvas Painting - Mithila Folk Art';
-      prodCategory = 'Folk Art & Paintings';
+      prodCategory = 'Paintings & Artworks';
       prodSubcategory = 'Mithila / Madhubani Fine Canvas';
       prodMaterial = 'Natural Plant Pigments on Handmade Cotton Canvas';
       prodColor = 'Ochre, Crimson, Indigo, Deep Black & Vermilion';
       retailPrice = 1850;
     } else if (hint.includes('saree') || hint.includes('silk') || hint.includes('handloom') || hint.includes('textile') || hint.includes('dupatta')) {
       prodTitle = 'Handloom Pure Katan Silk Banarasi Saree with Floral Gold Zari Weave & Rich Pallu';
-      prodCategory = 'Textiles & Handloom';
+      prodCategory = 'Clothing & Apparel';
       prodSubcategory = 'Pure Silk Brocade Weaves';
       prodMaterial = 'Pure Mulberry Silk with Fine Zari';
       prodColor = 'Royal Crimson & Gold';
       retailPrice = 2850;
     } else if (hint.includes('brass') || hint.includes('metal') || hint.includes('bronze') || hint.includes('lamp') || hint.includes('diya')) {
       prodTitle = 'Solid Brass Peacock Diya Oil Lamp with Hand-Chiseled Scalloped Urli - Antique Gold Finish';
-      prodCategory = 'Metalcraft & Dhokra';
+      prodCategory = 'Religious Items & Pooja';
       prodSubcategory = 'Heirloom Brassware';
       prodMaterial = 'Pure Cast Brass';
       prodColor = 'Antique Golden Lustre';
       retailPrice = 1450;
     } else if (hint.includes('wood') || hint.includes('carv') || hint.includes('box') || hint.includes('sheesham')) {
       prodTitle = 'Hand-Carved Sheesham Wood Floral Jali Keepsake Jewelry Box with Brass Inlay Accents';
-      prodCategory = 'Woodcraft & Lacquer';
+      prodCategory = 'Woodcraft & Carving';
       prodSubcategory = 'Jali Carving';
       prodMaterial = 'Seasoned Sheesham Wood';
       prodColor = 'Warm Teak & Honey Brown';

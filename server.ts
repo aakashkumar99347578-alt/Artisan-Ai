@@ -893,193 +893,191 @@ Output strictly valid JSON.`;
 });
 
 // 8 Canonical KalaSetu Product Categories matching seedData
-export const KALASETU_CATEGORIES = [
-  { id: "cat_paintings", name: "Folk Art & Paintings", slug: "folk-art" },
-  { id: "cat_pottery", name: "Pottery & Ceramics", slug: "pottery" },
-  { id: "cat_textiles", name: "Textiles & Handloom", slug: "textiles" },
-  { id: "cat_metalcraft", name: "Metalcraft & Dhokra", slug: "metalcraft" },
-  { id: "cat_woodcraft", name: "Woodcraft & Lacquer", slug: "woodcraft" },
-  { id: "cat_jewellery", name: "Handcrafted Jewellery", slug: "jewellery" },
-  { id: "cat_home_decor", name: "Home Décor & Accents", slug: "home-decor" },
-  { id: "cat_festive", name: "Festive & Corporate Gifts", slug: "festive-gifts" },
-] as const;
+export interface CategoryDefinition {
+  id: string;
+  name: string;
+  slug: string;
+  keywords: string[];
+  subcategories: string[];
+}
 
-export function normalizeKalaSetuCategory(raw?: string, clues?: string): { id: string; name: string; slug: string } {
-  const text = `${raw || ""} ${clues || ""}`.toLowerCase();
+export const MASTER_ARTISAN_CATEGORIES: CategoryDefinition[] = [
+  {
+    id: "cat_footwear",
+    name: "Footwear & Leathercraft",
+    slug: "footwear-leathercraft",
+    subcategories: ["Kolhapuri Sandals & Chappals", "Mojaris & Juttis", "Leather Slides & Sandals", "Handcrafted Leather Shoes", "Shantiniketan Leathercraft"],
+    keywords: ["kolhapuri", "sandal", "sandals", "chappal", "chappals", "mojari", "mojaris", "jutti", "juttis", "footwear", "shoe", "shoes", "leather sandal", "leather chappal", "slipper", "slippers", "slip-on", "slip-ons", "mule", "mules", "boot", "boots", "strappy sandal", "toe ring sandal", "leather craft", "sole", "buckle"]
+  },
+  {
+    id: "cat_clothing",
+    name: "Clothing & Apparel",
+    slug: "clothing-apparel",
+    subcategories: ["Sarees & Handloom Weaves", "Kurtas & Kurtis", "Dupattas & Stoles", "Shawls & Throws", "Dhotis & Gamchas", "Lehengas & Ethnic Wear", "Handloom Fabrics"],
+    keywords: ["saree", "saris", "sari", "kurta", "kurtas", "kurti", "kurtis", "shirt", "shirts", "dupatta", "dupattas", "shawl", "shawls", "stole", "stoles", "lehenga", "lehengas", "dhoti", "dhotis", "lungi", "fabric", "cloth", "clothes", "clothing", "apparel", "garment", "garments", "wear", "banarasi", "chanderi", "katan", "tussar", "organza", "khadi", "ajrakh", "ikat", "bandhani", "chikankari", "kantha", "phulkari"]
+  },
+  {
+    id: "cat_paintings",
+    name: "Paintings & Artworks",
+    slug: "paintings-artworks",
+    subcategories: ["Madhubani / Mithila Painting", "Warli Folk Art", "Pattachitra Scrolls & Canvas", "Pichwai Paintings", "Gond Tribal Art", "Tanjore Gold Leaf", "Miniature Painting", "Canvas Murals & Artworks"],
+    keywords: ["painting", "paintings", "canvas", "artwork", "artworks", "madhubani", "mithila", "warli", "pattachitra", "pichwai", "gond", "tanjore", "phad", "kalamkari art", "folk art", "miniature painting", "mural", "murals", "drawing", "illustration", "sketch", "acrylic on canvas", "oil on canvas", "art"]
+  },
+  {
+    id: "cat_home_decor",
+    name: "Home Décor & Utility",
+    slug: "home-decor-utility",
+    subcategories: ["Artistic Candles", "Candle Sticks", "Ethnic Clock", "Events Souvenirs", "Incense Sticks", "Metal Wares", "Mirrors", "Paper Works & Paper Mache", "Stone Wares", "Tapestries & Wall Hangings", "Vases & Basket Torans", "Wall Clocks", "Wooden Handicrafts", "Hanger", "Walking Sticks", "Fridge & TV covers", "Decorative items", "Miniature", "Holder", "Partition"],
+    keywords: ["artistic candle", "candle stick", "candle sticks", "ethnic clock", "wall clock", "clock", "clocks", "events souvenirs", "incense sticks", "incense", "metal wares", "metal ware", "mirror", "mirrors", "paper works", "paper mache", "paper mâché", "stone wares", "stone ware", "tapestry", "tapestries", "wall hanging", "wall hangings", "vase", "vases", "basket toran", "toran", "torans", "wooden handicrafts", "hanger", "walking stick", "walking sticks", "fridge cover", "tv cover", "decorative items", "decorative", "partition", "holder", "miniature decor"]
+  },
+  {
+    id: "cat_kitchen",
+    name: "Kitchen & Dining",
+    slug: "kitchen-dining",
+    subcategories: ["Place Mats", "Dish Cloths & Towels", "Table Napkins", "Kitchen Utilities", "Table Mats", "Copper Bottle", "Water Bottle"],
+    keywords: ["place mat", "place mats", "dish cloth", "dish cloths", "table napkin", "table napkins", "napkin", "kitchen utilities", "kitchen utility", "table mat", "table mats", "copper bottle", "copper bottles", "water bottle", "water bottles", "kitchen", "dining", "cookware", "brass utensil", "utensil", "utensils", "platter", "platters", "drinkware"]
+  },
+  {
+    id: "cat_furnishings",
+    name: "Home Furnishings",
+    slug: "home-furnishings",
+    subcategories: ["Bedsheets", "Blankets, Throws & Quilts", "Pillow Covers", "Table Runners", "Comforters & Sets", "Cushion Covers", "Bedspreads & Covers", "Curtains"],
+    keywords: ["bedsheet", "bedsheets", "blanket", "blankets", "throw", "throws", "quilt", "quilts", "pillow cover", "pillow covers", "pillow", "table runner", "table runners", "comforter", "comforters", "cushion cover", "cushion covers", "cushion", "cushions", "bedspread", "bedspreads", "curtain", "curtains", "drapes"]
+  },
+  {
+    id: "cat_floor",
+    name: "Floor Coverings",
+    slug: "floor-coverings",
+    subcategories: ["Carpets", "Place Mats", "Rugs", "Durries & Doormats", "Yoga Mats"],
+    keywords: ["carpet", "carpets", "rug", "rugs", "durrie", "durries", "doormat", "doormats", "floor covering", "floor coverings", "floor mat", "floor mats"]
+  },
+  {
+    id: "cat_sports",
+    name: "Sports & Fitness",
+    slug: "sports-fitness",
+    subcategories: ["Skipping Ropes", "Bow & Arrow", "Yoga Mats", "Massager", "Games"],
+    keywords: ["skipping rope", "skipping ropes", "bow and arrow", "bow & arrow", "massager", "massagers", "traditional games", "wooden games", "game", "games", "sports", "fitness"]
+  },
+  {
+    id: "cat_musical",
+    name: "Musical Instruments",
+    slug: "musical-instruments",
+    subcategories: ["Flute", "Tabla", "Pungi/Been", "Sitar", "Tanpura", "Dholak"],
+    keywords: ["flute", "flutes", "tabla", "tablas", "pungi", "been", "sitar", "sitars", "tanpura", "tanpuras", "dholak", "dholaks", "musical instrument", "musical instruments", "shehnai", "harmonium", "sarod", "veena"]
+  },
+  {
+    id: "cat_accessories",
+    name: "Accessories",
+    slug: "accessories",
+    subcategories: ["Travel Bags", "Bottle Bag", "Keychains", "Hand Fan"],
+    keywords: ["travel bag", "travel bags", "bottle bag", "bottle bags", "keychain", "keychains", "hand fan", "hand fans", "tote bag", "tote bags", "pouch", "pouches", "wallet", "wallets", "purse", "purses", "accessory", "accessories"]
+  },
+  {
+    id: "cat_stationery",
+    name: "Stationery",
+    slug: "stationery",
+    subcategories: ["Diaries", "Personal Organiser", "Calendars", "Bookmarks", "Pencils", "File Folders", "Envelops", "Pen Stand", "Craft Accessories"],
+    keywords: ["diar", "diaries", "diary", "personal organiser", "organiser", "calendar", "calendars", "bookmark", "bookmarks", "pencil", "pencils", "file folder", "file folders", "envelop", "envelops", "envelope", "envelopes", "pen stand", "pen stands", "craft accessories", "stationery", "journal", "journals"]
+  },
+  {
+    id: "cat_lighting",
+    name: "Lighting",
+    slug: "lighting",
+    subcategories: ["Floor Lamps", "Lamp Shades", "Pendants Lights", "Table Lamps", "Tea Light Candle Holders", "Wall Lamps & Sconces", "Chandliers"],
+    keywords: ["floor lamp", "floor lamps", "lamp shade", "lamp shades", "pendants lights", "pendant light", "table lamp", "table lamps", "tea light candle holder", "tea light candle holders", "tea light", "wall lamps", "wall lamp", "sconce", "sconces", "chandlier", "chandliers", "chandelier", "chandeliers", "lighting", "lantern", "lanterns"]
+  },
+  {
+    id: "cat_bath",
+    name: "Bath",
+    slug: "bath",
+    subcategories: ["Towel", "Gamchas"],
+    keywords: ["towel", "towels", "gamcha", "gamchas", "bath linen", "bath", "bathing"]
+  },
+  {
+    id: "cat_wellness",
+    name: "Wellness",
+    slug: "wellness",
+    subcategories: ["Yoga", "Meditation", "Health"],
+    keywords: ["yoga", "meditation", "wellness", "health", "ayurvedic", "herbal wellness"]
+  },
+  {
+    id: "cat_religious",
+    name: "Religious Item",
+    slug: "religious-item",
+    subcategories: ["Pooja Kalash", "Pooja utility", "Tulsi Kanthi Mala", "Idols of God", "Religious Gifts", "Tulsi Japa Mala"],
+    keywords: ["pooja kalash", "kalash", "pooja utility", "puja utility", "pooja", "puja", "mandir", "tulsi kanthi mala", "kanthi mala", "tulsi japa mala", "japa mala", "idols of god", "god idol", "idol", "idols", "murti", "murtis", "religious gifts", "religious gift", "religious item", "religious items", "diya", "diyas", "deepam", "vilakku", "agarbatti", "dhoop"]
+  },
+  {
+    id: "cat_jewellery",
+    name: "Handcrafted Jewellery",
+    slug: "jewellery",
+    subcategories: ["Kundan & Meenakari", "Jhumkas & Earrings", "Choker Necklaces", "Bangles & Bracelets", "Dokra & Tribal Jewellery"],
+    keywords: ["jewel", "jewellery", "jewelry", "jhumka", "jhumkas", "earring", "earrings", "necklace", "necklaces", "choker", "chokers", "bangle", "bangles", "bracelet", "bracelets", "kundan", "meenakari", "filigree", "anklet", "payal"]
+  },
+  {
+    id: "cat_pottery",
+    name: "Pottery & Ceramics",
+    slug: "pottery-ceramics",
+    subcategories: ["Terracotta Clay Kulhads", "Handmade Clay Pots & Matkas", "Jaipuri Blue Pottery", "Glazed Studio Ceramics"],
+    keywords: ["pottery", "ceramic", "ceramics", "terracotta", "clay", "kulhad", "kulhads", "matka", "matkas", "earthen", "blue pottery", "earthenware"]
+  }
+];
 
-  // 1. Textiles & Handloom (Sarees, Silks, Fabrics, Dupattas - check first so wearable textiles never get put into home decor)
-  if (
-    text.includes("saree") ||
-    text.includes("sari") ||
-    text.includes("silk") ||
-    text.includes("handloom") ||
-    text.includes("dupatta") ||
-    text.includes("shawl") ||
-    text.includes("stole") ||
-    text.includes("fabric") ||
-    text.includes("chanderi") ||
-    text.includes("banarasi") ||
-    text.includes("katan") ||
-    text.includes("tussar") ||
-    text.includes("georgette") ||
-    text.includes("organza") ||
-    text.includes("khadi") ||
-    text.includes("ajrakh") ||
-    text.includes("ikat") ||
-    text.includes("bandhani") ||
-    text.includes("chikankari") ||
-    text.includes("kantha") ||
-    text.includes("phulkari") ||
-    text.includes("kurta") ||
-    text.includes("kurti") ||
-    text.includes("lehenga") ||
-    text.includes("apparel") ||
-    text.includes("garment") ||
-    text.includes("weave") ||
-    text.includes("woven") ||
-    text.includes("pallu") ||
-    text.includes("zari")
-  ) {
-    return KALASETU_CATEGORIES[2]; // Textiles & Handloom
+export const KALASETU_CATEGORIES = MASTER_ARTISAN_CATEGORIES.map(c => ({ id: c.id, name: c.name, slug: c.slug }));
+
+export function autoMatchBestCategory(clues?: string): { id: string; name: string; slug: string; subcategory: string } {
+  const text = (clues || "").toLowerCase();
+  
+  let bestCategory = MASTER_ARTISAN_CATEGORIES[3]; // default Home Decor
+  let bestSubcategory = "";
+  let highestScore = 0;
+
+  for (const cat of MASTER_ARTISAN_CATEGORIES) {
+    let score = 0;
+    let matchedSub = "";
+
+    // 1. Check subcategory exact or partial token matches (high weight)
+    for (const sub of cat.subcategories) {
+      const subTokens = sub.toLowerCase().split(/[\s,&/]+/).filter(w => w.length > 2);
+      let subMatches = 0;
+      for (const token of subTokens) {
+        if (text.includes(token)) subMatches++;
+      }
+      if (subMatches > 0) {
+        score += subMatches * 15;
+        if (!matchedSub || subMatches > 1) {
+          matchedSub = sub;
+        }
+      }
+    }
+
+    // 2. Check keywords match
+    for (const kw of cat.keywords) {
+      if (text.includes(kw)) {
+        score += kw.includes(" ") ? 30 : 12;
+        if (!matchedSub) {
+          matchedSub = cat.subcategories[0];
+        }
+      }
+    }
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestCategory = cat;
+      bestSubcategory = matchedSub || cat.subcategories[0];
+    }
   }
 
-  // 2. Folk Art & Paintings (Paintings, Canvas, Murals, Folk Art - NEVER home decor)
-  if (
-    text.includes("paint") ||
-    text.includes("canvas") ||
-    text.includes("madhubani") ||
-    text.includes("mithila") ||
-    text.includes("warli") ||
-    text.includes("pattachitra") ||
-    text.includes("pichwai") ||
-    text.includes("gond") ||
-    text.includes("tanjore") ||
-    text.includes("phad") ||
-    text.includes("kalamkari art") ||
-    text.includes("folk art") ||
-    text.includes("miniature") ||
-    text.includes("mural") ||
-    text.includes("brush") ||
-    text.includes("illustration") ||
-    text.includes("sketch") ||
-    text.includes("drawing") ||
-    text.includes("artwork") ||
-    text.includes("acrylic on canvas") ||
-    text.includes("oil on canvas") ||
-    text.includes("natural pigments")
-  ) {
-    return KALASETU_CATEGORIES[0]; // Folk Art & Paintings
-  }
+  return {
+    id: bestCategory.id,
+    name: bestCategory.name,
+    slug: bestCategory.slug,
+    subcategory: bestSubcategory || bestCategory.subcategories[0],
+  };
+}
 
-  // 3. Metalcraft & Dhokra (Brass, Bronze, Copper, Metal Diya/Lamps, Bells, Dhokra)
-  if (
-    text.includes("brass") ||
-    text.includes("metal") ||
-    text.includes("bronze") ||
-    text.includes("dhokra") ||
-    text.includes("dokra") ||
-    text.includes("bell metal") ||
-    text.includes("copper") ||
-    text.includes("iron") ||
-    text.includes("moradabad") ||
-    text.includes("cast brass") ||
-    text.includes("diya") ||
-    text.includes("lamp") ||
-    text.includes("deepam") ||
-    text.includes("vilakku") ||
-    text.includes("urli") ||
-    text.includes("idol") ||
-    text.includes("murti") ||
-    text.includes("statue") ||
-    text.includes("figurine")
-  ) {
-    return KALASETU_CATEGORIES[3]; // Metalcraft & Dhokra
-  }
-
-  // 4. Pottery & Ceramics (Clay, Terracotta, Kulhads, Earthen pots, Jaipuri Blue Pottery)
-  if (
-    text.includes("potter") ||
-    text.includes("ceramic") ||
-    text.includes("terracotta") ||
-    text.includes("clay") ||
-    text.includes("earthen") ||
-    text.includes("blue pottery") ||
-    text.includes("glazed") ||
-    text.includes("kulhad") ||
-    text.includes("matka") ||
-    text.includes("earthenware") ||
-    text.includes("baked earth")
-  ) {
-    return KALASETU_CATEGORIES[1]; // Pottery & Ceramics
-  }
-
-  // 5. Woodcraft & Lacquer (Carved Sheesham, Teak, Channapatna, Walnut, Jali boxes)
-  if (
-    text.includes("wood") ||
-    text.includes("lacquer") ||
-    text.includes("sheesham") ||
-    text.includes("teak") ||
-    text.includes("channapatna") ||
-    text.includes("walnut") ||
-    text.includes("carved wood") ||
-    text.includes("jali") ||
-    text.includes("wooden") ||
-    text.includes("timber")
-  ) {
-    return KALASETU_CATEGORIES[4]; // Woodcraft & Lacquer
-  }
-
-  // 6. Handcrafted Jewellery (Kundan, Meenakari, Jhumka, Necklace, Bangles, Filigree)
-  if (
-    text.includes("jewel") ||
-    text.includes("jhumka") ||
-    text.includes("earring") ||
-    text.includes("necklace") ||
-    text.includes("pendant") ||
-    text.includes("bangle") ||
-    text.includes("bracelet") ||
-    text.includes("kundan") ||
-    text.includes("meenakari") ||
-    text.includes("filigree") ||
-    text.includes("choker") ||
-    text.includes("silver ornament")
-  ) {
-    return KALASETU_CATEGORIES[5]; // Handcrafted Jewellery
-  }
-
-  // 7. Festive & Corporate Gifts (Gift hampers, corporate boxes)
-  if (
-    text.includes("corporate gift") ||
-    text.includes("gift hamper") ||
-    text.includes("gift box") ||
-    text.includes("keepsake box") ||
-    text.includes("festive hamper")
-  ) {
-    return KALASETU_CATEGORIES[7]; // Festive & Corporate Gifts
-  }
-
-  // 8. Home Décor & Accents (ONLY if specifically home furnishings like mirrors, clocks, planters, rugs, cushions)
-  if (
-    text.includes("mirror") ||
-    text.includes("clock") ||
-    text.includes("planter") ||
-    text.includes("rug") ||
-    text.includes("carpet") ||
-    text.includes("cushion") ||
-    text.includes("runner") ||
-    text.includes("macrame")
-  ) {
-    return KALASETU_CATEGORIES[6]; // Home Décor & Accents
-  }
-
-  // Smart fallback based on raw/clues: if any art/painting word exists, pick Folk Art, else check craft materials
-  if (text.includes("paint") || text.includes("art") || text.includes("draw") || text.includes("paper")) {
-    return KALASETU_CATEGORIES[0];
-  }
-  if (text.includes("cloth") || text.includes("thread") || text.includes("wear")) {
-    return KALASETU_CATEGORIES[2];
-  }
-  return KALASETU_CATEGORIES[3]; // Default to Metalcraft & Dhokra rather than generic Home Decor
+export function normalizeKalaSetuCategory(raw?: string, clues?: string): { id: string; name: string; slug: string; subcategory?: string } {
+  return autoMatchBestCategory(`${raw || ""} ${clues || ""}`);
 }
 
 // Helper to construct complete downstream packages (Catalog, SEO, Pricing & Demand)
@@ -1616,7 +1614,7 @@ function buildArtisanProductFromClues(clues: {
     hindiTitle = `प्राकृतिक टेराकोटा मिट्टी कुल्हड़ व दीया सेट`;
     tags = ["Terracotta", "Clay Pottery", "Handmade Kulhad", "Eco Friendly", "Organic Clay"];
   } else if (isTextile) {
-    category = "Textiles & Handloom";
+    category = "Clothing & Apparel";
     subcategory = textClues.includes("banarasi") ? "Banarasi Brocade" : textClues.includes("chanderi") ? "Chanderi Weave" : "Handloom Weaves";
     material = "Pure Mulberry Silk with Metallic Zari";
     color = "Festive Crimson, Royal Gold & Jewel Tones";
@@ -1630,7 +1628,7 @@ function buildArtisanProductFromClues(clues: {
     hindiTitle = `हथकरघा शुद्ध बनारसी कातन सिल्क साड़ी`;
     tags = ["Handloom Saree", "Pure Silk", "Banarasi Brocade", "Katan Silk", "Ethnic Wear", "Indian Weave"];
   } else if (isWood) {
-    category = "Woodcraft & Lacquer";
+    category = "Woodcraft & Carving";
     subcategory = "Hand-Carved Wooden Craft";
     material = "Seasoned Sheesham Wood";
     color = "Natural Walnut & Teak Brown Grain";
@@ -1654,7 +1652,7 @@ function buildArtisanProductFromClues(clues: {
     hindiTitle = `हस्तनिर्मित कुंदन मीनाकारी चोकर नेकलेस सेट`;
     tags = ["Kundan Jewelry", "Meenakari", "Handmade Choker", "Artisan Jewelry", "Ethnic Adornments"];
   } else if (isArtPainting) {
-    category = "Folk Art & Paintings";
+    category = "Paintings & Artworks";
     subcategory = textClues.includes("warli") ? "Warli Tribal Art" : textClues.includes("pattachitra") ? "Odisha Pattachitra" : "Madhubani / Mithila Folk Art";
     material = "Natural Vegetable Pigments on Handmade Cotton Canvas";
     color = "Rich Earthy Ochre, Vermilion, Indigo & Natural Dyes";
@@ -1843,37 +1841,46 @@ ${voiceTranscript ? `Artisan's spoken description: "${voiceTranscript}"` : ""}
 CRITICAL OBJECTIVE:
 Carefully inspect the photo and identify the EXACT physical product shown with maximum accuracy.
 
-CRITICAL DISCIPLINE-FIRST CATEGORIZATION (DO NOT DEFAULT TO "Home Décor & Accents"):
-Every artisan product belongs to its true craftsmanship discipline:
-1. "Folk Art & Paintings": For any paintings, canvas art, scrolls, folk art (Madhubani, Warli, Pattachitra, Gond, Pichwai, Tanjore). NEVER classify a painting as Home Décor!
-2. "Textiles & Handloom": For sarees, dupattas, shawls, stoles, fabrics, handloom weaves (Banarasi, Chanderi, Katan silk, Khadi). NEVER classify clothing/fabrics as Home Décor!
-3. "Metalcraft & Dhokra": For brass, bronze, bell metal, copper, oil diyas, lamps, bells, idols, statues, figurines, Moradabad brassware, Dhokra lost-wax casting.
-4. "Pottery & Ceramics": For clay kulhads, terracotta pots, earthenware vessels, studio pottery, Jaipuri blue pottery.
-5. "Woodcraft & Lacquer": For carved sheesham, jali boxes, wooden lacquer, teak, walnut carvings.
-6. "Handcrafted Jewellery": For Kundan, Meenakari, choker necklaces, jhumkas, bangles, silver jewelry.
-7. "Home Décor & Accents": ONLY for items that are strictly home accents/furnishings (e.g. mirrors, clocks, artisanal cushion covers, rugs, planters).
-8. "Festive & Corporate Gifts": For festive hampers and corporate celebration gift boxes.
+AUTOMATED PRODUCT TAXONOMY MATCHING (CHOOSE THE CATEGORY WITH HIGHEST RELEVANCE):
+Select the exact category that matches this product best from the catalog:
+1. "Footwear & Leathercraft": All sandals, Kolhapuri chappals, mojaris, juttis, leather slides, footwear, shoes, slippers.
+2. "Clothing & Apparel": All clothes and wearable handlooms - Sarees, Kurtas, Kurtis, Shirts, Dupattas, Shawls, Lehengas, Stoles, Dhotis, Fabrics.
+3. "Paintings & Artworks": All paintings and canvases - Madhubani, Warli, Pattachitra, Pichwai, Gond, Tanjore, Miniatures, Murals, Canvas Artworks, Sketches.
+4. "Home Décor & Utility": Artistic Candles, Candle Sticks, Ethnic Clocks, Wall Clocks, Metal Wares, Mirrors, Paper Mache, Stone Wares, Tapestries & Wall Hangings, Vases, Torans, Wooden Handicrafts, Walking Sticks, Decorative items, Partitions.
+5. "Kitchen & Dining": Place Mats, Dish Cloths, Table Napkins, Kitchen Utilities, Table Mats, Copper Bottles, Water Bottles, Cookware, Platters, Drinkware.
+6. "Home Furnishings": Bedsheets, Blankets, Throws & Quilts, Pillow Covers, Table Runners, Comforters & Sets, Cushion Covers, Bedspreads, Curtains, Drapes.
+7. "Floor Coverings": Carpets, Rugs, Durries & Doormats, Floor Mats.
+8. "Sports & Fitness": Skipping Ropes, Bow & Arrow, Massagers, Traditional Wooden Games.
+9. "Musical Instruments": Flute, Tabla, Pungi/Been, Sitar, Tanpura, Dholak, Shehnai, Harmonium.
+10. "Accessories": Travel Bags, Bottle Bags, Keychains, Hand Fans, Tote Bags, Purses, Wallets.
+11. "Stationery": Diaries, Personal Organisers, Calendars, Bookmarks, Pencils, File Folders, Envelopes, Pen Stands, Craft Accessories.
+12. "Lighting": Floor Lamps, Lamp Shades, Pendant Lights, Table Lamps, Tea Light Candle Holders, Wall Lamps & Sconces, Chandeliers, Lanterns.
+13. "Bath": Towels, Gamchas.
+14. "Wellness": Yoga, Meditation, Health.
+15. "Religious Item": Pooja Kalash, Pooja Utility, Tulsi Kanthi Mala, Idols of God, Murtis, Religious Gifts, Tulsi Japa Mala, Brass Diyas, Deepams, Incense.
+16. "Handcrafted Jewellery": Kundan, Meenakari, Choker Necklaces, Jhumkas, Earrings, Bangles, Bracelets, Pendants, Silver/Tribal Ornaments.
+17. "Pottery & Ceramics": Clay Kulhads, Terracotta Pots, Earthenware Vessels, Studio Pottery, Jaipuri Blue Pottery.
 
 CRITICAL TITLE REQUIREMENTS (LONG, IMPACTFUL & COMMERCIAL: 75 TO 110 CHARACTERS):
 - Write a long, high-converting e-commerce product title (75 to 110 characters) like top-ranking listings on Amazon, Flipkart, Etsy, and Jaypore!
 - Title Formula: [Specific Craft Item] + [Authentic Technique & Key Materials] + [Distinctive Feature / Motif] + [Occasion / Styling]
 - Examples:
+  * "Genuine Leather Tan Brown Kolhapuri Sandal with Metal Buckle and Hand-Stitched Artisanal Sole" (94 chars)
   * "Pure Katan Silk Handloom Banarasi Saree with Intricate Gold Zari Floral Weave & Rich Pallu" (90 chars)
-  * "Solid Brass Peacock Diya Oil Lamp with Hand-Chiseled Scalloped Urli - Antique Gold Finish" (89 chars)
   * "Original Hand-Painted Madhubani Fish & Tree of Life Canvas Painting - Mithila Folk Art" (86 chars)
-  * "Hand-Carved Sheesham Wood Floral Jali Keepsake Jewelry Box with Brass Inlay Accents" (83 chars)
+  * "Solid Brass Peacock Diya Oil Lamp with Hand-Chiseled Scalloped Urli - Antique Gold Finish" (89 chars)
 
 STRICT BAN ON THE WORD "TRADITIONAL" AND GENERIC CLICHÉS:
 - DO NOT use the word "traditional" or "traditional craft" anywhere in the title, tags, or description!
-- Instead, use specific, authoritative craftsmanship terminology: "handloom mulberry silk", "sand-cast pure brass", "lost-wax casting", "fine bamboo nib pen work", "hand-thrown river clay", "openwork jali carving", "natural vegetable mineral pigments".
+- Instead, use specific, authoritative craftsmanship terminology: "handloom mulberry silk", "sand-cast pure brass", "lost-wax casting", "fine bamboo nib pen work", "hand-thrown river clay", "openwork jali carving", "vegetable-tanned genuine leather".
 - Zero boilerplate phrases like "handmade traditional craft", "exquisite handcrafted from natural materials", "artisan heritage decor".
 
 Output strictly valid JSON with this exact schema:
 {
-  "exact_detected_item": "Exact noun (e.g. 'Madhubani Folk Painting', 'Handloom Silk Saree', 'Brass Diya', 'Carved Wood Box')",
+  "exact_detected_item": "Exact noun (e.g. 'Kolhapuri Sandal', 'Madhubani Folk Painting', 'Handloom Silk Saree', 'Copper Water Bottle')",
   "product_name": "Accurate, descriptive commercial product title for the exact item in the photo",
   "short_title": "2-4 word concise title",
-  "category": "Strictly ONE of the 8 canonical categories listed above",
+  "category": "Exact matched category name from the 17 options above",
   "subcategory": "Specific craft or style subcategory",
   "material": "Visible materials",
   "color": "Visible colors and hues",
@@ -1994,6 +2001,7 @@ Output strictly valid JSON with this exact schema:
       `${parsed.product_name || ""} ${parsed.short_title || ""} ${parsed.exact_detected_item || ""} ${parsed.material || ""} ${contextHint || ""}`
     );
     const generatedCategory = normalizedCat.name;
+    const generatedSubcategory = normalizedCat.subcategory || parsed.subcategory || null;
 
     // 2. Synthesize dynamic, bespoke e-commerce copy using live competitor marketplace benchmarks
     let dynamicEnrichment: any = null;
@@ -2091,7 +2099,7 @@ Return ONLY a JSON object with this exact schema:
       product_name: generatedTitle,
       short_title: parsed.short_title || generatedTitle.slice(0, 35),
       category: generatedCategory,
-      subcategory: parsed.subcategory || null,
+      subcategory: generatedSubcategory,
       material: generatedMaterial,
       color: generatedColor,
       style: parsed.style || "Traditional Folk Artisan",
