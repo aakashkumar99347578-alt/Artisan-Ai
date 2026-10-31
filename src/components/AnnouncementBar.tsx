@@ -23,17 +23,6 @@ export const AnnouncementBar: React.FC<AnnouncementBarProps> = ({
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 text-[11px] text-[#DFD5C4]">
-          {onOpenSupabase && (
-            <button
-              onClick={onOpenSupabase}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[#3ECF8E] font-medium transition-colors cursor-pointer"
-              title="Click to open Supabase Database Hub"
-            >
-              <Database className="w-3 h-3 text-[#3ECF8E]" />
-              <span className="font-mono">DB: Artisan</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
-            </button>
-          )}
 
           <div className="hidden md:flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#E27D26]" />

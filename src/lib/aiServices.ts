@@ -234,35 +234,35 @@ export async function analyzeProductImage(
     let retailPrice = 1250;
 
     if (hint.includes('paint') || hint.includes('art') || hint.includes('madhubani') || hint.includes('mithila') || hint.includes('warli') || hint.includes('pattachitra') || hint.includes('canvas')) {
-      prodTitle = 'Authentic Hand-Painted Madhubani Folk Art Painting';
-      prodCategory = 'Traditional Paintings & Folk Art';
-      prodSubcategory = 'Mithila / Madhubani Heritage Canvas';
+      prodTitle = 'Original Hand-Painted Madhubani Fish & Tree of Life Canvas Painting - Mithila Folk Art';
+      prodCategory = 'Folk Art & Paintings';
+      prodSubcategory = 'Mithila / Madhubani Fine Canvas';
       prodMaterial = 'Natural Plant Pigments on Handmade Cotton Canvas';
       prodColor = 'Ochre, Crimson, Indigo, Deep Black & Vermilion';
       retailPrice = 1850;
     } else if (hint.includes('saree') || hint.includes('silk') || hint.includes('handloom') || hint.includes('textile') || hint.includes('dupatta')) {
-      prodTitle = 'Handloom Pure Silk Heritage Saree';
-      prodCategory = 'Handloom & Textiles';
-      prodSubcategory = 'Traditional Weaves';
+      prodTitle = 'Handloom Pure Katan Silk Banarasi Saree with Floral Gold Zari Weave & Rich Pallu';
+      prodCategory = 'Textiles & Handloom';
+      prodSubcategory = 'Pure Silk Brocade Weaves';
       prodMaterial = 'Pure Mulberry Silk with Fine Zari';
       prodColor = 'Royal Crimson & Gold';
       retailPrice = 2850;
     } else if (hint.includes('brass') || hint.includes('metal') || hint.includes('bronze') || hint.includes('lamp') || hint.includes('diya')) {
-      prodTitle = 'Hand-Cast Traditional Brass Decorative Lamp';
-      prodCategory = 'Brass & Metal Craft';
+      prodTitle = 'Solid Brass Peacock Diya Oil Lamp with Hand-Chiseled Scalloped Urli - Antique Gold Finish';
+      prodCategory = 'Metalcraft & Dhokra';
       prodSubcategory = 'Heirloom Brassware';
       prodMaterial = 'Pure Cast Brass';
       prodColor = 'Antique Golden Lustre';
       retailPrice = 1450;
     } else if (hint.includes('wood') || hint.includes('carv') || hint.includes('box') || hint.includes('sheesham')) {
-      prodTitle = 'Hand-Carved Sheesham Wood Keepsake Box';
-      prodCategory = 'Woodwork & Carvings';
+      prodTitle = 'Hand-Carved Sheesham Wood Floral Jali Keepsake Jewelry Box with Brass Inlay Accents';
+      prodCategory = 'Woodcraft & Lacquer';
       prodSubcategory = 'Jali Carving';
       prodMaterial = 'Seasoned Sheesham Wood';
       prodColor = 'Warm Teak & Honey Brown';
       retailPrice = 980;
     } else if (hint.includes('pot') || hint.includes('clay') || hint.includes('ceramic') || hint.includes('terracotta')) {
-      prodTitle = 'Hand-Thrown Terracotta Decorative Vessel';
+      prodTitle = 'Hand-Thrown Terracotta Clay Chai Kulhad Set of 6 - 100% Organic Baked Earth Drinkware';
       prodCategory = 'Pottery & Ceramics';
       prodSubcategory = 'Earthen Pottery';
       prodMaterial = 'Natural River Clay & Mineral Glaze';
@@ -273,6 +273,80 @@ export async function analyzeProductImage(
     const b2b = Math.round(retailPrice * 0.7);
     const bulk = Math.round(retailPrice * 0.6);
 
+    const fallbackKeywords = [
+      `buy ${prodTitle.toLowerCase()} online`,
+      `authentic ${prodMaterial.toLowerCase()} ${prodCategory.toLowerCase()}`,
+      `handmade ${prodTitle.toLowerCase()} India`,
+      `artisan ${prodCategory.toLowerCase()} online store`,
+      `handcrafted ${prodTitle.toLowerCase()} fair trade`,
+      `traditional Indian ${prodCategory.toLowerCase()} for living room`,
+      `custom ${prodTitle.toLowerCase()} corporate gifting`,
+      `original master artisan ${prodTitle.toLowerCase()}`,
+      `natural ${prodMaterial.toLowerCase()} handcrafted item`,
+      `ethnic Indian decor ${prodCategory.toLowerCase()} price`,
+      `GI tagged authentic ${prodTitle.toLowerCase()}`,
+      `KalaSetu verified ${prodCategory.toLowerCase()}`,
+    ];
+
+    const fallbackSearchTags = [
+      prodCategory,
+      prodSubcategory,
+      prodMaterial,
+      prodColor,
+      'Handcrafted',
+      'Artisan Direct',
+      'Made in India',
+      'Traditional Craft',
+      'Home Decor',
+      'Ethnic Art',
+      'Cultural Heritage',
+      'Fair Trade',
+      'Festive Gifting',
+      'Sustainable Living',
+    ];
+
+    const fallbackSemantics = [
+      prodCategory.toLowerCase(),
+      prodMaterial.toLowerCase(),
+      'Indian artisan craft',
+      'GI tagged handicrafts',
+      'fair wage artisan community',
+      'sustainable cultural decor',
+      'natural vegetable pigments',
+      'heritage master craftsman',
+      'authentic Indian heirloom',
+      'ethical marketplace India',
+      'hand-finished organic texture',
+      'living room accent piece',
+    ];
+
+    const fallbackFaqs = [
+      {
+        question: `Is this ${prodTitle} 100% authentically handmade?`,
+        answer: `Yes, each piece is handcrafted individually by certified master Indian artisans using traditional generational techniques and genuine ${prodMaterial}.`,
+      },
+      {
+        question: `What materials are used and are they eco-friendly?`,
+        answer: `Crafted exclusively with natural ${prodMaterial} in authentic ${prodColor}. All raw materials are sustainably harvested and free from harsh synthetic chemicals.`,
+      },
+      {
+        question: `How should I clean and care for this handcrafted ${prodCategory}?`,
+        answer: `Dust gently with a clean, soft micro-fiber cloth. Keep away from excess moisture, harsh chemical solvents, and direct prolonged heat.`,
+      },
+      {
+        question: `Can I place bulk or customized corporate gifting orders?`,
+        answer: `Yes, KalaSetu directly facilitates artisan bulk and corporate gifting orders starting from 20 units with bespoke artisan packaging and wholesale pricing.`,
+      },
+      {
+        question: `How is this item packaged to prevent transit damage?`,
+        answer: `Every piece is secured with multi-layered shock-absorbing protective wrap and durable double-wall corrugated transit boxes, backed by a 100% damage-replacement guarantee.`,
+      },
+      {
+        question: `Does this purchase directly support the artisan?`,
+        answer: `Yes, KalaSetu returns over 70% of proceeds directly to the artisan's bank account with zero middleman commissions.`,
+      },
+    ];
+
     return {
       success: true,
       analysis: {
@@ -282,7 +356,7 @@ export async function analyzeProductImage(
         material: prodMaterial,
         color: prodColor,
         style: 'Authentic Indian Folk Craft',
-        visible_features: ['Handcrafted detailing', 'Natural organic texture', 'Master artisan border'],
+        visible_features: ['Handcrafted detailing', 'Natural organic texture', 'Master artisan border', 'Sustainably sourced'],
         text_visible_in_image: [],
         brand_visible: null,
         likely_use_cases: ['Home & living room decor', 'Auspicious cultural gifting', 'Art collector collection'],
@@ -297,7 +371,7 @@ export async function analyzeProductImage(
         material: prodMaterial,
         color: prodColor,
         style: 'Authentic Indian Folk Craft',
-        shortDescription: `Exquisite ${prodTitle.toLowerCase()} handcrafted from ${prodMaterial.toLowerCase()}, showcasing authentic artisan craftsmanship.`,
+        shortDescription: `Authentic ${prodTitle.toLowerCase()} handcrafted from ${prodMaterial.toLowerCase()}, showcasing authentic artisan craftsmanship.`,
         detailedDescription: `Every detail of this ${prodTitle.toLowerCase()} is painstakingly crafted using traditional generational techniques. Featuring ${prodColor.toLowerCase()} and premium ${prodMaterial.toLowerCase()}, this distinctive craft item seamlessly blends rich heritage with modern elegance.`,
         craftStory: 'Preserving generational Indian handicraft traditions, every piece represents hours of dedicated hand craftsmanship by master artisans.',
         targetAudience: 'Conscious home decorators, art collectors, cultural festive gifters, and interior styling connoisseurs',
@@ -306,13 +380,14 @@ export async function analyzeProductImage(
           `Created with genuine ${prodMaterial}`,
           'Intricate generational motifs and authentic detailing',
           'Direct fair-trade verification with artisan livelihood support',
+          'Eco-friendly and durable heirloom-quality craftsmanship',
         ],
         features: ['Handcrafted construction', 'Natural material texture', 'Artisan finish'],
         benefits: ['Supports traditional artisan livelihoods', 'Unique one-of-a-kind art aesthetic', 'Sustainable materials'],
         useCases: ['Living room statement decor', 'Festive & cultural gifting', 'Art connoisseur collection'],
         careInstructions: 'Gently dust with a clean, dry micro-fiber cloth. Keep away from excessive moisture and harsh direct heat.',
-        tags: [prodCategory, 'Handmade', 'Indian Craft', 'Artisan', 'Heritage'],
-        keywords: [prodTitle.toLowerCase(), 'authentic Indian handicraft', 'buy handmade online', 'artisan home decor'],
+        tags: fallbackSearchTags,
+        keywords: fallbackKeywords,
         translations: {
           hindi: {
             title: `हस्तनिर्मित ${prodTitle}`,
@@ -326,14 +401,11 @@ export async function analyzeProductImage(
         metaDescription: `Buy authentic ${prodTitle.toLowerCase()} made of genuine ${prodMaterial.toLowerCase()}. 100% handmade by master Indian craftspeople with direct fair-trade pricing.`,
         slug: prodTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
         primaryKeyword: prodTitle.toLowerCase(),
-        secondaryKeywords: [`handmade ${prodCategory.toLowerCase()}`, 'buy authentic Indian craft online', 'artisan handicraft'],
-        searchTags: [prodCategory, 'Handmade', 'Artisan Heritage', 'Fair Trade'],
-        productTags: [prodCategory, 'Handmade', 'Artisan Heritage'],
-        semanticKeywords: [prodCategory, prodMaterial, 'Indian artisan craft', 'GI tagged handicrafts', 'fair trade artisan'],
-        faq: [
-          { question: `Is this ${prodTitle} 100% handmade?`, answer: `Yes, each piece is handcrafted individually by certified master Indian artisans.` },
-          { question: `How to care for ${prodMaterial} craft?`, answer: `Dust gently with a soft micro-fiber cloth. Keep protected from moisture and direct sunlight.` },
-        ],
+        secondaryKeywords: fallbackKeywords,
+        searchTags: fallbackSearchTags,
+        productTags: [prodCategory, 'Handmade', 'Artisan Heritage', 'Fair Trade'],
+        semanticKeywords: fallbackSemantics,
+        faq: fallbackFaqs,
       },
       pricing: {
         estimated_price: retailPrice,
@@ -561,18 +633,75 @@ export async function generateSEO(params: {
         metaDescription: `Buy authentic ${params.title} directly from master artisans in ${params.region || 'India'}. Handcrafted from genuine ${params.material || 'sustainable materials'}. Fair-trade certified.`,
         slug: cleanSlug,
         primaryKeyword: params.title.toLowerCase(),
-        secondaryKeywords: [`handmade ${params.category.toLowerCase()}`, `authentic ${params.material.toLowerCase()}`, 'Indian handicraft'],
-        searchTags: ['handcrafted', 'direct from artisan', 'made in India'],
-        productTags: [params.category, 'Artisan', 'Festive'],
-        semanticKeywords: ['traditional craft', 'sustainable decor', 'GI tag craft'],
+        secondaryKeywords: [
+          `handmade ${params.category.toLowerCase()}`,
+          `authentic ${params.material.toLowerCase()} craft`,
+          `buy ${params.title.toLowerCase()} online`,
+          `artisan ${params.category.toLowerCase()} India`,
+          `handcrafted ${params.title.toLowerCase()} fair trade`,
+          `traditional Indian ${params.category.toLowerCase()} for living room`,
+          `custom ${params.title.toLowerCase()} corporate gifting`,
+          `original master artisan ${params.title.toLowerCase()}`,
+          `natural ${params.material.toLowerCase()} handcrafted piece`,
+          `ethnic Indian decor ${params.category.toLowerCase()} price`,
+          `GI tagged authentic ${params.title.toLowerCase()}`,
+          `KalaSetu verified ${params.category.toLowerCase()}`,
+        ],
+        searchTags: [
+          params.category,
+          params.material,
+          'Handcrafted',
+          'Artisan Direct',
+          'Made in India',
+          'Traditional Craft',
+          'Home Decor',
+          'Ethnic Art',
+          'Cultural Heritage',
+          'Fair Trade',
+          'Festive Gifting',
+          'Sustainable Living',
+          'Direct From Artisan',
+          'Handmade India',
+        ],
+        productTags: [params.category, 'Handmade', 'Artisan Heritage', 'Fair Trade'],
+        semanticKeywords: [
+          params.category.toLowerCase(),
+          params.material.toLowerCase(),
+          'traditional Indian craft',
+          'GI tagged handicrafts',
+          'fair wage artisan community',
+          'sustainable cultural decor',
+          'natural sustainable materials',
+          'heritage master craftsman',
+          'authentic Indian heirloom',
+          'ethical marketplace India',
+          'handcrafted living room accents',
+          'authentic cultural folk art',
+        ],
         faq: [
           {
-            question: 'Is this product 100% handcrafted?',
-            answer: 'Yes, every piece is made by hand using traditional artisan techniques.',
+            question: `Is this ${params.title} authentically 100% handcrafted?`,
+            answer: `Yes, each piece is handcrafted individually by certified master Indian artisans using traditional generational techniques and genuine ${params.material}.`,
           },
           {
-            question: 'How should I care for this item?',
-            answer: 'Wipe gently with a dry, soft microfiber cloth. Keep away from harsh chemicals.',
+            question: `What materials are used and are they eco-friendly?`,
+            answer: `Crafted exclusively with natural ${params.material}. All raw materials are sustainably sourced and free from toxic synthetic coatings.`,
+          },
+          {
+            question: `How should I clean and care for this handcrafted ${params.category}?`,
+            answer: 'Wipe gently with a dry, soft microfiber cloth. Avoid exposure to harsh chemical solvents and excessive moisture.',
+          },
+          {
+            question: `Can I place bulk or customized corporate gifting orders?`,
+            answer: 'Yes, KalaSetu directly facilitates artisan bulk and corporate gifting orders starting from 20 units with bespoke packaging and wholesale pricing.',
+          },
+          {
+            question: 'How is this item packaged to prevent transit damage?',
+            answer: 'Every piece is secured with multi-layered shock-absorbing protective wrap and durable transit boxes, backed by a 100% damage-replacement guarantee.',
+          },
+          {
+            question: 'Does this purchase directly support the artisan?',
+            answer: "Yes, KalaSetu returns over 70% of proceeds directly to the artisan's bank account with zero middleman commissions.",
           },
         ],
       },

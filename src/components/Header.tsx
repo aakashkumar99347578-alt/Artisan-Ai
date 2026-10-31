@@ -146,19 +146,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="sm:hidden">AI List</span>
           </button>
 
-          {/* Supabase Database Hub Status Pill */}
-          {onOpenSupabaseHub && (
-            <button
-              onClick={onOpenSupabaseHub}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#3ECF8E]/10 border border-[#3ECF8E]/30 text-[#1B7F53] hover:bg-[#3ECF8E]/20 text-xs font-semibold transition-colors cursor-pointer"
-              title="Supabase Database Connected (Project: Artisan)"
-            >
-              <Database className="w-3.5 h-3.5 text-[#2BB377]" />
-              <span className="text-[11px] font-mono">DB: Artisan</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#3ECF8E] animate-pulse" />
-            </button>
-          )}
-
           {/* Wishlist */}
           <button
             onClick={() => onNavigate('wishlist')}

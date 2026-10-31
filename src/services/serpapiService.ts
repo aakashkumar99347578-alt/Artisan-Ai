@@ -215,7 +215,7 @@ export class SerpApiService {
         });
 
         const res = await fetch(`https://serpapi.com/search?${params.toString()}`, {
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(15000),
         });
         if (!res.ok) return [];
 
@@ -260,7 +260,7 @@ export class SerpApiService {
           const uploadRes = await fetch("https://serpapi.com/image", {
             method: "POST",
             body: fd,
-            signal: AbortSignal.timeout(6000),
+            signal: AbortSignal.timeout(15000),
           });
 
           if (uploadRes.ok) {
@@ -273,7 +273,7 @@ export class SerpApiService {
               });
 
               const lensRes = await fetch(`https://serpapi.com/search?${params.toString()}`, {
-                signal: AbortSignal.timeout(6000),
+                signal: AbortSignal.timeout(15000),
               });
 
               if (lensRes.ok) {

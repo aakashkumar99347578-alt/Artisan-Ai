@@ -16,7 +16,7 @@ export const CategoryCarousel: React.FC<CategoryCarouselProps> = ({
   onViewAll,
 }) => {
   return (
-    <section className="py-12 bg-[#FAF7F2] border-b border-[#EFE9DE]">
+    <section className="pt-12 pb-20 sm:pb-24 bg-[#FAF7F2] border-b border-[#EFE9DE]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
           <div>
