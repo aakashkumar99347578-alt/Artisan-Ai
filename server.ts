@@ -3203,6 +3203,163 @@ Generate an optimized marketplace listing strictly as JSON:
   }
 });
 
+// ============================================================================
+// APNA DOST (अपना दोस्त) - 24/7 REGIONAL AI SAHAYAK & APP GUIDE
+// ============================================================================
+app.post("/api/ai/apna-dost", async (req, res) => {
+  try {
+    const { message, language = "hi", history = [] } = req.body || {};
+
+    if (!message || typeof message !== "string" || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Message is required.",
+      });
+    }
+
+    const clientKey = (req.headers["x-gemini-api-key"] as string) || req.body?.geminiApiKey;
+    const ai = getGeminiClient(clientKey);
+
+    const langInstructions: Record<string, string> = {
+      hi: "Respond in warm, simple, colloquial Hindi (हिन्दी) or natural Hinglish with polite respect (e.g. 'नमस्ते जी', 'आप', 'ज़रूर')",
+      en: "Respond in warm, clear, simple conversational Indian English",
+      mr: "Respond in warm, polite, and natural Marathi (मराठी)",
+      gu: "Respond in warm, polite, and natural Gujarati (ગુજરાતી)",
+      bn: "Respond in warm, polite, and natural Bengali (বাংলা)",
+      ta: "Respond in warm, polite, and natural Tamil (தமிழ்)",
+      te: "Respond in warm, polite, and natural Telugu (తెలుగు)",
+      pa: "Respond in warm, polite, and natural Punjabi (ਪੰਜਾਬੀ)",
+    };
+
+    const targetLangDesc = langInstructions[language] || "Detect the user's language and respond naturally in that same language (Hindi, regional, or English).";
+
+    const systemPrompt = `You are "अपना दोस्त" (Apna Dost), the friendly, patient, and knowledgeable 24/7 AI companion and guide for KalaSetu - India's authentic artisan marketplace.
+
+YOUR ROLE AND TONE:
+- You are like a caring friend and digital helper for artisans, weavers, crafters, and buyers.
+- When someone feels confused, stuck, or has trouble using the app ("app chalane me pareshani ya samasya"), you guide them step-by-step with zero technical jargon.
+- Keep answers concise, clear, and very easy to read and listen to via Text-to-Speech (2-4 bullet points maximum).
+- Always end with an encouraging friendly line like "कोई और सवाल हो तो बेझिझक पूछें, आपका अपना दोस्त हमेशा साथ है!"
+
+KNOWLEDGE OF KALASETU FEATURES:
+1. "AI Artisan Studio" (सामान बेचने और लिस्ट करने का तरीका):
+   - कारीगर को टाइप करने की ज़रूरत नहीं है!
+   - Step 1: Voice Note - माइक दबाकर अपनी बोली या भाषा में सामान के बारे में बोलें।
+   - Step 2: सामान की फ़ोटो अपलोड करें। AI खुद 17 श्रेणियों (जैसे कपड़े, जूते-चप्पल, पेंटिंग, होम डेकोर, रसोई आदि) में से सही श्रेणी पहचान लेता है।
+   - Step 3: AI अपने आप शीर्षक (Title), विवरण (Description) और सर्च कीवर्ड्स बना देता है।
+   - Step 4: AI Google बाजार के अनुसार सही कीमत और डिमांड स्कोर बताता है।
+   - Step 5: रिव्यू करके 1-क्लिक में पब्लिश करें!
+2. "B2B Wholesale Quotes" (थोक व्यापार):
+   - बड़ी मात्रा में सीधे खरीदारों से ऑर्डर लेने या देने के लिए 'B2B Quotes' मेन्यू का उपयोग करें।
+3. "Order Tracking" (ऑर्डर का पता लगाना):
+   - ऊपर मेन्यू में 'Order Tracking' पर जाकर ऑर्डर ID डालकर लाइव स्थिति देख सकते हैं।
+4. "Craft Clusters and Regional Crafts" (पारंपरिक शिल्प खोज):
+   - भारत के विभिन्न राज्यों के प्रसिद्ध हस्तशिल्प (पश्मीना, ब्लू पॉटरी, मधुबनी, कोल्हापुरी) देखने के लिए 'Craft Clusters' पर जाएं।
+5. "Free Call Support" (फ़ोन पर बात):
+   - अगर कारीगर खुद नहीं चला पा रहा है, तो 'Request Callback' पर क्लिक करके हमारी टीम से +91 80000 12345 पर मुफ़्त कॉल सहायता ले सकता है।
+
+LANGUAGE REQUIREMENT:
+${targetLangDesc}
+
+OUTPUT JSON FORMAT ONLY:
+{
+  "reply": "Your warm, clear response with numbered steps or bullet points",
+  "suggestedActions": [
+    { "label": "Short action button label", "target": "ai_studio" | "shop" | "clusters" | "b2b" | "orders" | "callback" }
+  ]
+}`;
+
+    if (!ai) {
+      const lower = message.toLowerCase();
+      let fallbackReply = "नमस्ते! मैं आपका 'अपना दोस्त' हूँ। आप कलासेतु ऐप पर अपनी आवाज रिकॉर्ड करके आसानी से सामान लिस्ट कर सकते हैं, बाजार भाव देख सकते हैं या खरीदारी कर सकते हैं। आप क्या करना चाहते हैं?";
+      let actions = [{ label: "AI स्टूडियो खोलें", target: "ai_studio" }, { label: "फ़ोन सहायता बुक करें", target: "callback" }];
+
+      if (lower.includes("product") || lower.includes("upload") || lower.includes("list") || lower.includes("बेच") || lower.includes("सामान")) {
+        fallbackReply = "कलासेतु पर सामान बेचना बहुत आसान है:\n1. ऊपर 'AI स्टूडियो' पर जाएं।\n2. माइक दबाकर अपने सामान के बारे में बोलें।\n3. सामान की एक साफ़ फ़ोटो अपलोड करें।\n4. AI खुद सही श्रेणी, कीमत और विवरण बना देगा।\n5. पब्लिश पर क्लिक करें!";
+        actions = [{ label: "AI स्टूडियो खोलें", target: "ai_studio" }];
+      } else if (lower.includes("price") || lower.includes("कीमत") || lower.includes("रेट") || lower.includes("bhav")) {
+        fallbackReply = "कलासेतु AI सीधे गूगल शॉपिंग से असली बाजार भाव चेक करके आपको सही कीमत बताता है, जिससे आपको अपनी कला का पूरा हक और सही मुनाफा मिले।";
+        actions = [{ label: "मार्केट रिसर्च देखें", target: "shop" }];
+      } else if (lower.includes("call") || lower.includes("phone") || lower.includes("बात") || lower.includes("help") || lower.includes("मदद")) {
+        fallbackReply = "अगर आपको ऐप चलाने में कोई भी परेशानी आ रही है, तो आप मुफ़्त कॉल सपोर्ट ले सकते हैं। हमारी टीम आपको फ़ोन पर पूरा सामान लिस्ट करवा देगी।";
+        actions = [{ label: "फ़्री कॉल बुक करें", target: "callback" }];
+      }
+
+      return res.json({
+        success: true,
+        reply: fallbackReply,
+        suggestedActions: actions,
+      });
+    }
+
+    const conversationContext = (history || []).slice(-6).map((h: any) =>
+      `${h.role === "user" ? "User" : "Apna Dost"}: ${h.text}`
+    ).join("\n");
+
+    const fullPrompt = `${systemPrompt}
+
+RECENT CONVERSATION HISTORY:
+${conversationContext || "No prior messages."}
+
+CURRENT USER QUESTION:
+"${message}"`;
+
+    try {
+      const response = await callGeminiSafe(ai, {
+        model: "gemini-3.5-flash-lite",
+        contents: fullPrompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              reply: { type: Type.STRING },
+              suggestedActions: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    label: { type: Type.STRING },
+                    target: { type: Type.STRING },
+                  },
+                  required: ["label", "target"],
+                },
+              },
+            },
+            required: ["reply", "suggestedActions"],
+          },
+        },
+      });
+
+      if (response.text) {
+        const parsed = JSON.parse(response.text);
+        return res.json({
+          success: true,
+          reply: parsed.reply,
+          suggestedActions: parsed.suggestedActions || [],
+        });
+      }
+    } catch (apiErr: any) {
+      console.warn("Gemini call error in Apna Dost:", apiErr?.message);
+    }
+
+    return res.json({
+      success: true,
+      reply: "नमस्ते! मैं आपका 'अपना दोस्त' हूँ। कलासेतु पर सामान अपलोड करने के लिए 'AI स्टूडियो' में जाएं और अपनी आवाज में बोलकर उत्पाद दर्ज करें। अगर कोई परेशानी आए तो आप सीधे कॉल सहायता भी बुक कर सकते हैं।",
+      suggestedActions: [
+        { label: "AI स्टूडियो खोलें", target: "ai_studio" },
+        { label: "फ़ोन कॉल सपोर्ट", target: "callback" },
+      ],
+    });
+  } catch (err: any) {
+    console.error("Apna Dost endpoint error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Apna Dost assistant is momentarily busy. Please try again.",
+    });
+  }
+});
+
 // Vite Middleware for SPA development and production static handling
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

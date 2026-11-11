@@ -247,46 +247,8 @@ export const Header: React.FC<HeaderProps> = ({
                     ))}
                   </div>
 
-                  <div className="pt-2 px-1 space-y-1">
-                    <button
-                      onClick={() => {
-                        setIsRoleDropdownOpen(false);
-                        if (currentUser.role === 'artisan') onNavigate('artisan_dashboard');
-                        else if (currentUser.role === 'support_operator') onNavigate('support_dashboard');
-                        else if (currentUser.role === 'admin') onNavigate('admin_dashboard');
-                        else onNavigate('customer_dashboard');
-                      }}
-                      className="w-full py-2 px-3 text-center text-xs font-semibold bg-[#FAF7F2] hover:bg-[#F4EFE6] text-[#3E2415] rounded-xl cursor-pointer"
-                    >
-                      Open Current Dashboard →
-                    </button>
-
-                    {onOpenSupabaseHub && (
-                      <button
-                        onClick={() => {
-                          setIsRoleDropdownOpen(false);
-                          onOpenSupabaseHub();
-                        }}
-                        className="w-full py-1.5 px-3 text-center text-xs font-medium text-[#1B7F53] bg-[#3ECF8E]/10 hover:bg-[#3ECF8E]/20 rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <Database className="w-3.5 h-3.5 text-[#2BB377]" />
-                        <span>Supabase DB Hub (Artisan)</span>
-                      </button>
-                    )}
-
-                    {onReplay3DIntro && (
-                      <button
-                        onClick={() => {
-                          setIsRoleDropdownOpen(false);
-                          onReplay3DIntro();
-                        }}
-                        className="w-full py-1.5 px-3 text-center text-xs font-medium text-[#C85A32] hover:bg-[#C85A32]/10 rounded-xl cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Replay 3D KalaSetu Motion</span>
-                      </button>
-                    )}
-
+                  {/* Sign Out button only */}
+                  <div className="pt-2 px-1 border-t border-stone-100">
                     {onOpenSignPage && (
                       <button
                         onClick={() => {

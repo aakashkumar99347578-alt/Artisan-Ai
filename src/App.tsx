@@ -22,6 +22,7 @@ import { RegionalCraftDiscovery } from './components/RegionalCraftDiscovery';
 import { TrendingSection } from './components/TrendingSection';
 import { ShopCatalog } from './components/ShopCatalog';
 import { Footer } from './components/Footer';
+import { ApnaDostChatbot } from './components/ApnaDostChatbot';
 
 // Code Splitting & Lazy Loading for heavy components and secondary views
 const AiProductCreationStudio = React.lazy(() =>
@@ -1001,6 +1002,19 @@ export default function App() {
         onClose={() => setIsSupabaseModalOpen(false)}
       />
       </React.Suspense>
+
+      {/* 24/7 Regional AI Sahayak & Guide: Apna Dost (अपना दोस्त) */}
+      <ApnaDostChatbot
+        onNavigate={(view) => {
+          if (view === 'ai_studio') {
+            setIsAiStudioOpen(true);
+          } else {
+            setActiveNav(view as any);
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onRequestCallback={() => setIsCallbackModalOpen(true)}
+      />
 
       {/* Rich Craft Footer */}
       <Footer
